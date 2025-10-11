@@ -8,9 +8,10 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddDbContext<NFLFantasyDbContext>(options =>
+builder.Services.AddDbContext<FantasyContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-builder.Services.AddScoped<PlayerService>();
+builder.Services.AddScoped<UserService>();
+builder.Services.AddControllers();
 builder.Services.AddControllers();
 
 var app = builder.Build();

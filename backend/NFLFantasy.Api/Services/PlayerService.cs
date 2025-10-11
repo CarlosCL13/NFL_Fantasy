@@ -6,8 +6,8 @@ namespace NFLFantasy.Api.Services
 {
     public class PlayerService
     {
-        private readonly NFLFantasyDbContext _context;
-        public PlayerService(NFLFantasyDbContext context)
+        private readonly FantasyContext _context;
+        public PlayerService(FantasyContext context)
         {
             _context = context;
         }

@@ -22,29 +22,43 @@ namespace NFLFantasy.Api.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("NFLFantasy.Api.Models.Player", b =>
+            modelBuilder.Entity("NFLFantasy.Api.Models.NflTeam", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<int>("NflTeamId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("NflTeamId"));
+
+                    b.Property<string>("City")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.Property<string>("Image")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
-                    b.Property<string>("Position")
+                    b.Property<string>("Thumbnail")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Team")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.HasKey("NflTeamId");
 
-                    b.HasKey("Id");
-
-                    b.ToTable("Players");
+                    b.ToTable("NflTeams");
                 });
 
             modelBuilder.Entity("NFLFantasy.Api.Models.Team", b =>

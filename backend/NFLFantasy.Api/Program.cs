@@ -11,6 +11,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<FantasyContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddScoped<UserService>();
+builder.Services.AddScoped<NflTeamService>();
 builder.Services.AddControllers();
 builder.Services.AddControllers();
 
@@ -25,6 +26,8 @@ if (app.Environment.IsDevelopment())
 
 
 app.UseHttpsRedirection();
+// Habilitar archivos estáticos para servir imágenes
+app.UseStaticFiles();
 app.UseAuthorization();
 app.MapControllers();
 

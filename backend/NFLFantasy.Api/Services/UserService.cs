@@ -14,7 +14,7 @@ namespace NFLFantasy.Api.Services
             _context = context;
         }
 
-        public async Task<(bool Success, string? Error, User? User)> RegisterAsync(RegisterUserDto dto)
+        public async Task<(bool Success, string? Error, User? User)> RegisterAsync(RegisterUserDto dto, string? profileImageFileName = null)
         {
             // Validación de email único
             if (await _context.Users.AnyAsync(u => u.Email == dto.Email))
@@ -24,7 +24,6 @@ namespace NFLFantasy.Api.Services
             if (await _context.Users.AnyAsync(u => u.Alias == dto.Alias))
                 return (false, "El alias ya está en uso.", null);
 
-            // Validación de modelo (ya se hace en el controlador, pero aquí puedes reforzar si quieres)
             // Encriptar contraseña
             var passwordHash = HashPassword(dto.Password);
 
@@ -34,7 +33,8 @@ namespace NFLFantasy.Api.Services
                 Email = dto.Email,
                 Alias = dto.Alias,
                 PasswordHash = passwordHash,
-                // CreatedAt, Role, Status, ProfileImage, Language usan valores por defecto
+                ProfileImage = profileImageFileName ?? "default.png"
+                // CreatedAt, Role, Status, Language usan valores por defecto
             };
 
             _context.Users.Add(user);

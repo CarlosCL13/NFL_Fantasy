@@ -14,12 +14,25 @@ namespace NFLFantasy.Api.Controllers
         /// Registra un nuevo usuario en la plataforma.
         /// </summary>
         [HttpPost("register")]
-        public async Task<IActionResult> Register([FromBody] RegisterUserDto dto)
+        public async Task<IActionResult> Register([FromForm] RegisterUserDto dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var (success, error, user) = await _userService.RegisterAsync(dto);
+            string? profileImageFileName = null;
+            if (dto.ProfileImage != null && dto.ProfileImage.Length > 0)
+            {
+                var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "users");
+                Directory.CreateDirectory(uploadsFolder);
+                profileImageFileName = $"{Guid.NewGuid()}_{dto.ProfileImage.FileName}";
+                var filePath = Path.Combine(uploadsFolder, profileImageFileName);
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await dto.ProfileImage.CopyToAsync(stream);
+                }
+            }
+
+            var (success, error, user) = await _userService.RegisterAsync(dto, profileImageFileName);
             if (!success)
                 return BadRequest(new { error });
 

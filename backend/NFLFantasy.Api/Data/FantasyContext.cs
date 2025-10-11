@@ -9,7 +9,7 @@ namespace NFLFantasy.Api.Data
 
     public DbSet<User> Users { get; set; }
     public DbSet<Team> Teams { get; set; }
-    public DbSet<Player> Players { get; set; }
+    public DbSet<NflTeam> NflTeams { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -22,6 +22,9 @@ namespace NFLFantasy.Api.Data
                 .HasDefaultValueSql("GETDATE()");
 
             modelBuilder.Entity<Team>()
+                .Property(t => t.CreatedAt)
+                .HasDefaultValueSql("GETDATE()");
+            modelBuilder.Entity<NflTeam>()
                 .Property(t => t.CreatedAt)
                 .HasDefaultValueSql("GETDATE()");
         }

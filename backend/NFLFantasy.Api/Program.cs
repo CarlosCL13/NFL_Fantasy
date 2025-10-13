@@ -8,12 +8,20 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
 builder.Services.AddDbContext<FantasyContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<NflTeamService>();
 builder.Services.AddControllers();
 builder.Services.AddControllers();
+
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+        policy.AllowAnyHeader().AllowAnyMethod().AllowCredentials().WithOrigins("http://localhost:4200"));
+});
 
 var app = builder.Build();
 
@@ -25,7 +33,8 @@ if (app.Environment.IsDevelopment())
 }
 
 
-app.UseHttpsRedirection();
+app.UseCors();
+//app.UseHttpsRedirection();
 // Habilitar archivos estáticos para servir imágenes
 app.UseStaticFiles();
 app.UseAuthorization();

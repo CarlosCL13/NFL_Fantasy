@@ -1,0 +1,18 @@
+<div class="container mt-4">
+  <h3>Crear equipo NFL</h3>
+  <form [formGroup]="form" (ngSubmit)="submit()">
+    <div class="mb-3">
+      <label>Nombre</label>
+      <input class="form-control" formControlName="name" />
+    </div>
+    <div class="mb-3">
+      <label>Ciudad</label>
+      <input class="form-control" formControlName="city" />
+    </div>
+    <div class="mb-3">
+      <label>Imagen</label>
+      <input class="form-control" type="file" (change)="onFileChange($event)" />
+    </div>
+    <button class="btn btn-primary" type="submit">Crear</button>
+  </form>
+</div>

@@ -1,3 +1,5 @@
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Processing;
 using Microsoft.AspNetCore.Mvc;
 using NFLFantasy.Api.DTO;
 using NFLFantasy.Api.Services;
@@ -39,16 +41,46 @@ namespace NFLFantasy.Api.Controllers
                 await file.CopyToAsync(stream);
             }
 
-            // Actualizar DTO para pasar la ruta de la imagen al service
+            // Generar thumbnail usando ImageSharp
+            var thumbnailFileName = $"thumb_{Guid.NewGuid()}.png";
+            var thumbnailPath = Path.Combine(uploadsFolder, thumbnailFileName);
+            using (var image = Image.Load(filePath))
+            {
+                image.Mutate(x => x.Resize(100, 100)); // tamaño del thumbnail
+                image.Save(thumbnailPath);
+            }
+
+            // Actualizar DTO para pasar la ruta de la imagen y thumbnail al service
             var (success, error, team) = await _nflTeamService.CreateNflTeamAsync(
                 dto.Name,
                 dto.City,
-                uniqueFileName
+                uniqueFileName,
+                thumbnailFileName
             );
             if (!success)
                 return BadRequest(new { error });
 
             return Ok(new { message = "Equipo NFL creado exitosamente", teamId = team!.NflTeamId });
+        }
+
+        /// <summary>
+        /// Obtiene la lista de todos los equipos NFL creados.
+        /// </summary>
+        /// <returns>Lista de equipos NFL.</returns>
+        [HttpGet]
+        public async Task<IActionResult> GetAll()
+        {
+            var teams = await _nflTeamService.GetAllNflTeamsAsync();
+            var result = teams.Select(t => new {
+                t.NflTeamId,
+                t.Name,
+                t.City,
+                imageUrl = $"/images/nflteams/{t.Image}",
+                thumbnailUrl = $"/images/nflteams/{t.Thumbnail}",
+                t.CreatedAt,
+                t.IsActive
+            });
+            return Ok(result);
         }
     }
 }

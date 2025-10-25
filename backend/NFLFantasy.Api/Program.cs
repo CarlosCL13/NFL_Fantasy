@@ -14,6 +14,7 @@ builder.Services.AddDbContext<FantasyContext>(options =>
     
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<NflTeamService>();
+builder.Services.AddScoped<SeasonService>();
 builder.Services.AddControllers();
 builder.Services.AddControllers();
 

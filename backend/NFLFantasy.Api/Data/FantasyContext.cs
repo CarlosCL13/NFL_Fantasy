@@ -11,6 +11,9 @@ namespace NFLFantasy.Api.Data
     public DbSet<Team> Teams { get; set; }
     public DbSet<NflTeam> NflTeams { get; set; }
 
+    public DbSet<Season> Seasons { get; set; }
+    public DbSet<Week> Weeks { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<User>()
@@ -26,6 +29,10 @@ namespace NFLFantasy.Api.Data
                 .HasDefaultValueSql("GETDATE()");
             modelBuilder.Entity<NflTeam>()
                 .Property(t => t.CreatedAt)
+                .HasDefaultValueSql("GETDATE()");
+
+            modelBuilder.Entity<Season>()
+                .Property(s => s.CreatedAt)
                 .HasDefaultValueSql("GETDATE()");
         }
     }

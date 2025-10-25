@@ -3,6 +3,7 @@ using SixLabors.ImageSharp.Processing;
 using Microsoft.AspNetCore.Mvc;
 using NFLFantasy.Api.DTO;
 using NFLFantasy.Api.Services;
+using NFLFantasy.Api;
 
 namespace NFLFantasy.Api.Controllers
 {
@@ -25,14 +26,28 @@ namespace NFLFantasy.Api.Controllers
         public async Task<IActionResult> Create([FromForm] CreateNflTeamDto dto)
         {
             if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+            {
+                var errors = ModelState.Values
+                    .SelectMany(v => v.Errors)
+                    .Select(e => e.ErrorMessage)
+                    .ToList();
+                return BadRequest(new { error = AppConstants.ErrorInvalidTeamData, detalles = errors });
+            }
 
             // Guardar imagen en disco
+
             var file = dto.Image;
             if (file == null || file.Length == 0)
-                return BadRequest(new { error = "La imagen es requerida." });
+                return BadRequest(new { error = AppConstants.ErrorRequiredImage });
 
-            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "nflteams");
+            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+            if (!AppConstants.AllowedImageExtensions.Contains(extension))
+                return BadRequest(new { error = AppConstants.ErrorInvalidImageFormat });
+
+            if (file.Length > AppConstants.MaxImageFileSize)
+                return BadRequest(new { error = AppConstants.ErrorImageTooLarge });
+
+            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), AppConstants.NflTeamsImageFolder.Replace("/", Path.DirectorySeparatorChar.ToString()));
             Directory.CreateDirectory(uploadsFolder);
             var uniqueFileName = $"{Guid.NewGuid()}_{file.FileName}";
             var filePath = Path.Combine(uploadsFolder, uniqueFileName);
@@ -58,9 +73,9 @@ namespace NFLFantasy.Api.Controllers
                 thumbnailFileName
             );
             if (!success)
-                return BadRequest(new { error });
+                return BadRequest(new { error = error ?? "No se pudo crear el equipo NFL. Por favor, verifica los datos e inténtalo de nuevo." });
 
-            return Ok(new { message = "Equipo NFL creado exitosamente", teamId = team!.NflTeamId });
+            return Ok(new { message = "Equipo NFL creado exitosamente.", teamId = team!.NflTeamId });
         }
 
         /// <summary>

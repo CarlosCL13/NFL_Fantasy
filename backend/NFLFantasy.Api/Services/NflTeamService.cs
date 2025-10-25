@@ -2,6 +2,7 @@ using NFLFantasy.Api.DTO;
 using NFLFantasy.Api.Models;
 using NFLFantasy.Api.Data;
 using Microsoft.EntityFrameworkCore;
+using NFLFantasy.Api;
 
 namespace NFLFantasy.Api.Services
 {
@@ -23,11 +24,12 @@ namespace NFLFantasy.Api.Services
         /// <returns>Tupla con éxito, mensaje de error y el equipo creado.</returns>
         public async Task<(bool Success, string? Error, NflTeam? Team)> CreateNflTeamAsync(string name, string city, string imageFileName, string thumbnailFileName)
         {
+
             if (await _context.NflTeams.AnyAsync(t => t.Name == name))
-                return (false, "El nombre del equipo ya existe.", null);
+                return (false, AppConstants.ErrorNflTeamNameExists, null);
 
             if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(city) || string.IsNullOrWhiteSpace(imageFileName) || string.IsNullOrWhiteSpace(thumbnailFileName))
-                return (false, "Todos los campos son requeridos.", null);
+                return (false, AppConstants.ErrorMissingNflTeamFields, null);
 
             var team = new NflTeam
             {

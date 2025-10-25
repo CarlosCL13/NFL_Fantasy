@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using NFLFantasy.Api.DTO;
 using NFLFantasy.Api.Services;
 
@@ -28,6 +29,7 @@ namespace NFLFantasy.Api.Controllers
         /// <summary>
         /// Crea una nueva temporada y sus semanas (solo administrador).
         /// </summary>
+        [Authorize]
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateSeasonDto dto)
         {

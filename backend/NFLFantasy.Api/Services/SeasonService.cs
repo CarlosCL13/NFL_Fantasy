@@ -72,5 +72,53 @@ namespace NFLFantasy.Api.Services
             await _context.SaveChangesAsync();
             return (true, null, season);
         }
+
+        /// <summary>
+        /// Obtiene todas las temporadas existentes con sus semanas.
+        /// </summary>
+        public async Task<List<Season>> GetAllSeasonsAsync()
+        {
+            return await _context.Seasons
+                .Include(s => s.Weeks)
+                .OrderByDescending(s => s.CreatedAt)
+                .ToListAsync();
+        }
+
+        /// <summary>
+        /// Verifica si un nombre de temporada está disponible.
+        /// </summary>
+        public async Task<bool> IsSeasonNameAvailableAsync(string name)
+        {
+            return !await _context.Seasons.AnyAsync(s => s.Name.ToLower() == name.ToLower());
+        }
+
+        /// <summary>
+        /// Obtiene la temporada actualmente marcada como actual.
+        /// </summary>
+        public async Task<Season?> GetCurrentSeasonAsync()
+        {
+            return await _context.Seasons
+                .Include(s => s.Weeks)
+                .FirstOrDefaultAsync(s => s.IsCurrent);
+        }
+
+        /// <summary>
+        /// Obtiene información resumida sobre conflictos potenciales.
+        /// </summary>
+        public async Task<object> GetConflictInfoAsync(CreateSeasonDto dto)
+        {
+            var nameExists = await _context.Seasons.AnyAsync(s => s.Name.ToLower() == dto.Name.ToLower());
+            var currentSeasonExists = await _context.Seasons.AnyAsync(s => s.IsCurrent);
+            var dateOverlap = await _context.Seasons.AnyAsync(s =>
+                (dto.StartDate <= s.EndDate && dto.EndDate >= s.StartDate));
+
+            return new
+            {
+                nameConflict = nameExists,
+                currentSeasonConflict = dto.IsCurrent && currentSeasonExists,
+                dateConflict = dateOverlap,
+                canCreate = !nameExists && !(dto.IsCurrent && currentSeasonExists) && !dateOverlap
+            };
+        }
     }
 }

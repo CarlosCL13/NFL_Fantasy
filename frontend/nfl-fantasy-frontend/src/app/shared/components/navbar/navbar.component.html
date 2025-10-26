@@ -12,6 +12,9 @@
         <li class="nav-item" *ngIf="auth.isAuthenticated()">
           <a class="nav-link" routerLink="/teams/create">Crear equipo</a>
         </li>
+        <li class="nav-item" *ngIf="auth.isAuthenticated()">
+          <a class="nav-link" routerLink="/seasons/create">Crear temporada</a>
+        </li>
       </ul>
 
       <ul class="navbar-nav">

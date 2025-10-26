@@ -9,6 +9,11 @@ namespace NFLFantasy.Api.Models
     public class League
     {
         /// <summary>
+        /// Indica si la liga está activa.
+        /// </summary>
+        public bool IsActive { get; set; } = true;
+        
+        /// <summary>
         /// Identificador único de la liga.
         /// </summary>
         public int LeagueId { get; set; }

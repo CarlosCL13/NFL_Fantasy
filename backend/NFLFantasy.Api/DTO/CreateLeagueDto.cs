@@ -6,7 +6,15 @@ namespace NFLFantasy.Api.DTO
     /// DTO para la creación de una nueva liga de fantasía NFL.
     /// </summary>
     public class CreateLeagueDto
+
     {
+
+        /// <summary>
+        /// Alias único del equipo del comisionado.
+        /// </summary>
+        [Required, StringLength(30)]
+        public string CommissionerAlias { get; set; } = string.Empty;
+
         /// <summary>
         /// Nombre de la liga.
         /// </summary>

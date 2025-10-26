@@ -16,12 +16,13 @@ namespace NFLFantasy.Api.Data
         /// <summary>
         /// Conjuntos de entidades en el contexto.
         /// </summary>
-        public DbSet<User> Users { get; set; }
-        public DbSet<Team> Teams { get; set; }
-        public DbSet<NflTeam> NflTeams { get; set; }
-        public DbSet<League> Leagues { get; set; }
-        public DbSet<Season> Seasons { get; set; }
-        public DbSet<Week> Weeks { get; set; }
+    public DbSet<User> Users { get; set; }
+    public DbSet<Team> Teams { get; set; }
+    public DbSet<NflTeam> NflTeams { get; set; }
+    public DbSet<League> Leagues { get; set; }
+    public DbSet<Season> Seasons { get; set; }
+    public DbSet<Week> Weeks { get; set; }
+    public DbSet<LeagueAudit> LeagueAudits { get; set; }
 
         /// <summary>
         /// Configuraciones adicionales del modelo.

@@ -9,6 +9,12 @@ namespace NFLFantasy.Api.Models
     public class Team
     {
         /// <summary>
+        /// Alias único del equipo dentro de la liga.
+        /// </summary>
+        [Required, StringLength(30)]
+        public string Alias { get; set; } = string.Empty;
+
+        /// <summary>
         /// Identificador único del equipo.
         /// </summary>
         public int TeamId { get; set; }
@@ -37,5 +43,5 @@ namespace NFLFantasy.Api.Models
         [ForeignKey("League")]
         public int LeagueId { get; set; }
         public League? League { get; set; }
-        }
+    }
 }

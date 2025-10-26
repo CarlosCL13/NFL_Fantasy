@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NFLFantasy.Api.Data;
 
@@ -11,9 +12,11 @@ using NFLFantasy.Api.Data;
 namespace NFLFantasy.Api.Migrations
 {
     [DbContext(typeof(FantasyContext))]
-    partial class FantasyContextModelSnapshot : ModelSnapshot
+    [Migration("20251025183929_AddLeagueTable")]
+    partial class AddLeagueTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -49,9 +52,6 @@ namespace NFLFantasy.Api.Migrations
 
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
 
                     b.Property<int?>("MaxFreeAgentsPerTeam")
                         .HasColumnType("int");
@@ -90,32 +90,6 @@ namespace NFLFantasy.Api.Migrations
                     b.HasIndex("SeasonId");
 
                     b.ToTable("Leagues");
-                });
-
-            modelBuilder.Entity("NFLFantasy.Api.Models.LeagueAudit", b =>
-                {
-                    b.Property<int>("LeagueAuditId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("LeagueAuditId"));
-
-                    b.Property<string>("Action")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("LeagueId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("Timestamp")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.HasKey("LeagueAuditId");
-
-                    b.ToTable("LeagueAudits");
                 });
 
             modelBuilder.Entity("NFLFantasy.Api.Models.NflTeam", b =>
@@ -199,17 +173,12 @@ namespace NFLFantasy.Api.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("TeamId"));
 
-                    b.Property<string>("Alias")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
-
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("GETDATE()");
 
-                    b.Property<int>("LeagueId")
+                    b.Property<int?>("LeagueId")
                         .HasColumnType("int");
 
                     b.Property<string>("TeamName")
@@ -339,19 +308,15 @@ namespace NFLFantasy.Api.Migrations
 
             modelBuilder.Entity("NFLFantasy.Api.Models.Team", b =>
                 {
-                    b.HasOne("NFLFantasy.Api.Models.League", "League")
+                    b.HasOne("NFLFantasy.Api.Models.League", null)
                         .WithMany("Teams")
-                        .HasForeignKey("LeagueId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("LeagueId");
 
                     b.HasOne("NFLFantasy.Api.Models.User", "User")
                         .WithMany("Teams")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("League");
 
                     b.Navigation("User");
                 });

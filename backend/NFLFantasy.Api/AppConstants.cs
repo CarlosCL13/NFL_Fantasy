@@ -1,5 +1,7 @@
 namespace NFLFantasy.Api
 {
+    // Constantes de la aplicación
+    
     public static class AppConstants
     {
         // UserService

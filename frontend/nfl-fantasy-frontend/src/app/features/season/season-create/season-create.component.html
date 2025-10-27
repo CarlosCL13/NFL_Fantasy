@@ -100,8 +100,7 @@
               type="checkbox" 
               id="isCurrent"
               formControlName="isCurrent"
-              class="form-checkbox"
-              [disabled]="currentSeasonInfo && canSetAsCurrent()">
+              class="form-checkbox">
             <label for="isCurrent" class="checkbox-label">
               Establecer como temporada actual
             </label>
@@ -113,7 +112,7 @@
               {{ getCurrentSeasonMessage() }}
             </small>
             <small *ngIf="currentSeasonInfo && seasonForm.get('isCurrent')?.value" class="warning-message">
-              ⚠️ Esto reemplazará la temporada actual existente
+               Esto reemplazará la temporada actual existente
             </small>
           </div>
         </div>

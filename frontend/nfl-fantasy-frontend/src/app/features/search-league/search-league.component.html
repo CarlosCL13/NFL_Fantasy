@@ -1,0 +1,37 @@
+<h2>Buscar ligas por temporada</h2>
+
+<!-- Selección de temporada -->
+<div>
+  <label>Seleccionar temporada:</label>
+  <select [(ngModel)]="selectedSeasonId" (change)="onSelectSeason()">
+    <option value="" disabled selected>-- Selecciona una --</option>
+    <option *ngFor="let s of seasons" [value]="s.seasonId">{{ s.name }}</option>
+  </select>
+</div>
+
+<!-- Listado de ligas -->
+<div *ngIf="leagues.length > 0">
+  <h3>Ligas disponibles</h3>
+  <ul>
+    <li *ngFor="let l of leagues">
+      <strong>{{ l.name }}</strong> (Activa: {{ l.isActive ? 'Sí' : 'No' }})
+      <button (click)="joinForm.leagueId = l.leagueId!; joinLeague()">Unirme</button>
+    </li>
+  </ul>
+</div>
+
+<!-- Formulario para unirse -->
+<div *ngIf="joinForm.leagueId">
+  <h4>Formulario para unirse</h4>
+
+  <label>Contraseña:</label>
+  <input type="password" [(ngModel)]="joinForm.password" />
+
+  <label>Alias:</label>
+  <input type="text" [(ngModel)]="joinForm.alias" />
+
+  <label>Nombre del equipo:</label>
+  <input type="text" [(ngModel)]="joinForm.teamName" />
+
+  <button (click)="joinLeague()">Confirmar unión</button>
+</div>

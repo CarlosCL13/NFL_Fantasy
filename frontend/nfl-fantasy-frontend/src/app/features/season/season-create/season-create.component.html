@@ -1,0 +1,141 @@
+<div class="season-create-container">
+  <div class="card">
+    <div class="card-header">
+      <h2>Crear Nueva Temporada</h2>
+      <p>Administra las fechas, semanas y parámetros básicos para las ligas de fantasy</p>
+    </div>
+    
+    <div class="card-body">
+      <form [formGroup]="seasonForm" (ngSubmit)="onSubmit()" class="season-form">
+        
+        <!-- Nombre de la temporada -->
+        <div class="form-group">
+          <label for="name" class="form-label">
+            Nombre de la Temporada <span class="required">*</span>
+          </label>
+          <div class="input-container">
+            <input 
+              type="text" 
+              id="name"
+              formControlName="name"
+              class="form-control"
+              [class.error]="hasFieldError('name') || !nameAvailable"
+              [class.success]="nameAvailable && nameCheckMessage && !isCheckingName"
+              placeholder="Ej: NFL 2024-2025"
+              maxlength="100">
+            <div *ngIf="isCheckingName" class="checking-indicator">
+              <span class="spinner-small"></span>
+            </div>
+          </div>
+          
+          <!-- Mensaje de validación del nombre -->
+          <div *ngIf="nameCheckMessage && !hasFieldError('name')" 
+               [class]="nameAvailable ? 'success-message' : 'error-message'">
+            {{ nameCheckMessage }}
+          </div>
+          
+          <!-- Error de validación estándar -->
+          <div *ngIf="hasFieldError('name')" class="error-message">
+            {{ getFieldErrorMessage('name') }}
+          </div>
+        </div>
+
+        <!-- Número de semanas -->
+        <div class="form-group">
+          <label for="weeksCount" class="form-label">
+            Número de Semanas <span class="required">*</span>
+          </label>
+          <input 
+            type="number" 
+            id="weeksCount"
+            formControlName="weeksCount"
+            class="form-control"
+            [class.error]="hasFieldError('weeksCount')"
+            min="1" 
+            max="30"
+            placeholder="17">
+          <small class="form-hint">Número de semanas que durará la temporada (1-30)</small>
+          <div *ngIf="hasFieldError('weeksCount')" class="error-message">
+            {{ getFieldErrorMessage('weeksCount') }}
+          </div>
+        </div>
+
+        <!-- Fechas -->
+        <div class="form-row">
+          <div class="form-group">
+            <label for="startDate" class="form-label">
+              Fecha de Inicio <span class="required">*</span>
+            </label>
+            <input 
+              type="date" 
+              id="startDate"
+              formControlName="startDate"
+              class="form-control"
+              [class.error]="hasFieldError('startDate')">
+            <div *ngIf="hasFieldError('startDate')" class="error-message">
+              {{ getFieldErrorMessage('startDate') }}
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="endDate" class="form-label">
+              Fecha de Fin <span class="required">*</span>
+            </label>
+            <input 
+              type="date" 
+              id="endDate"
+              formControlName="endDate"
+              class="form-control"
+              [class.error]="hasFieldError('endDate')">
+            <div *ngIf="hasFieldError('endDate')" class="error-message">
+              {{ getFieldErrorMessage('endDate') }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Estado actual -->
+        <div class="form-group">
+          <div class="checkbox-container">
+            <input 
+              type="checkbox" 
+              id="isCurrent"
+              formControlName="isCurrent"
+              class="form-checkbox">
+            <label for="isCurrent" class="checkbox-label">
+              Establecer como temporada actual
+            </label>
+          </div>
+          
+          <!-- Información sobre temporada actual -->
+          <div class="current-season-info">
+            <small class="form-hint" [class.warning]="currentSeasonInfo">
+              {{ getCurrentSeasonMessage() }}
+            </small>
+            <small *ngIf="currentSeasonInfo && seasonForm.get('isCurrent')?.value" class="warning-message">
+               Esto reemplazará la temporada actual existente
+            </small>
+          </div>
+        </div>
+
+        <!-- Botones de acción -->
+        <div class="form-actions">
+          <button 
+            type="button" 
+            class="btn btn-secondary"
+            (click)="router.navigate(['/'])"
+            [disabled]="isSubmitting">
+            Cancelar
+          </button>
+          
+          <button 
+            type="submit" 
+            class="btn btn-primary"
+            [disabled]="seasonForm.invalid || isSubmitting || !nameAvailable || isCheckingName">
+            <span *ngIf="isSubmitting" class="spinner"></span>
+            {{ isSubmitting ? 'Creando...' : 'Crear Temporada' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,36 @@
+<nav class="navbar navbar-expand navbar-light bg-light">
+  <div class="container-fluid">
+    <a class="navbar-brand" routerLink="/">NFL Fantasy</a>
+
+    <div class="collapse navbar-collapse">
+      <ul class="navbar-nav me-auto">
+        <!-- Solo para no autenticados -->
+        <li class="nav-item" *ngIf="!auth.isAuthenticated()">
+          <a class="nav-link" routerLink="/login">Login</a>
+        </li>
+        <li class="nav-item" *ngIf="!auth.isAuthenticated()">
+          <a class="nav-link" routerLink="/register">Registro</a>
+        </li>
+
+        <!-- Solo para autenticados -->
+        <li class="nav-item" *ngIf="auth.isAuthenticated()">
+          <a class="nav-link" routerLink="/teams/create">Crear equipo</a>
+        </li>
+        <li class="nav-item" *ngIf="auth.isAuthenticated()">
+          <a class="nav-link" routerLink="/seasons/create">Crear temporada</a>
+        </li>
+
+        <!-- 🔥 Nuevo: Buscar Ligas -->
+        <li class="nav-item" *ngIf="auth.isAuthenticated()">
+          <a class="nav-link" routerLink="/leagues/search">Buscar ligas</a>
+        </li>
+      </ul>
+
+      <ul class="navbar-nav">
+        <li class="nav-item" *ngIf="auth.isAuthenticated()">
+          <a class="nav-link" (click)="logout()" style="cursor: pointer"> Cerrar sesión </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>

@@ -1,0 +1,275 @@
+<div class="league-create-container">
+  <div class="card">
+    <div class="card-header">
+      <h2>Crear Nueva Liga</h2>
+      <p>Configura tu liga de fantasy y conviértete en el comisionado principal</p>
+    </div>
+    
+    <div class="card-body">
+      <form [formGroup]="leagueForm" (ngSubmit)="onSubmit()" class="league-form">
+        
+        <!-- Información básica de la liga -->
+        <div class="form-section">
+          <h3 class="section-title">Información de la Liga</h3>
+          
+          <!-- Nombre de la liga -->
+          <div class="form-group">
+            <label for="name" class="form-label">
+              Nombre de la Liga <span class="required">*</span>
+            </label>
+            <div class="input-container">
+              <input 
+                type="text" 
+                id="name"
+                formControlName="name"
+                class="form-control"
+                [class.error]="hasFieldError('name') || !nameAvailable"
+                [class.success]="nameAvailable && nameCheckMessage && !isCheckingName"
+                placeholder="Ej: Liga de los Campeones 2024"
+                maxlength="100">
+              <div *ngIf="isCheckingName" class="checking-indicator">
+                <span class="spinner-small"></span>
+              </div>
+            </div>
+            
+            <!-- Mensaje de validación del nombre -->
+            <div *ngIf="nameCheckMessage && !hasFieldError('name')" 
+                 [class]="nameAvailable ? 'success-message' : 'error-message'">
+              {{ nameCheckMessage }}
+            </div>
+            
+            <!-- Error de validación estándar -->
+            <div *ngIf="hasFieldError('name')" class="error-message">
+              {{ getFieldErrorMessage('name') }}
+            </div>
+          </div>
+
+          <!-- Descripción (opcional) -->
+          <div class="form-group">
+            <label for="description" class="form-label">
+              Descripción (Opcional)
+            </label>
+            <textarea 
+              id="description"
+              formControlName="description"
+              class="form-control textarea"
+              [class.error]="hasFieldError('description')"
+              placeholder="Describe tu liga, reglas especiales, etc."
+              maxlength="500"
+              rows="3">
+            </textarea>
+            <small class="form-hint">Máximo 500 caracteres</small>
+            <div *ngIf="hasFieldError('description')" class="error-message">
+              {{ getFieldErrorMessage('description') }}
+            </div>
+          </div>
+
+          <!-- Cantidad de equipos -->
+          <div class="form-group">
+            <label for="maxTeams" class="form-label">
+              Cantidad de Equipos <span class="required">*</span>
+            </label>
+            <select 
+              id="maxTeams"
+              formControlName="maxTeams"
+              class="form-control"
+              [class.error]="hasFieldError('maxTeams')"
+              (change)="onTeamCountChange($event)">
+              <option *ngFor="let count of teamCountOptions" [value]="count">
+                {{ count }} equipos
+              </option>
+            </select>
+            <small class="form-hint">Número total de equipos que participarán en la liga</small>
+            <div *ngIf="hasFieldError('maxTeams')" class="error-message">
+              {{ getFieldErrorMessage('maxTeams') }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Configuración de seguridad -->
+        <div class="form-section">
+          <h3 class="section-title">Configuración de Seguridad</h3>
+          
+          <!-- Contraseña -->
+          <div class="form-row">
+            <div class="form-group">
+              <label for="password" class="form-label">
+                Contraseña de la Liga <span class="required">*</span>
+              </label>
+              <input 
+                type="password" 
+                id="password"
+                formControlName="password"
+                class="form-control"
+                [class.error]="hasFieldError('password')"
+                placeholder="Contraseña segura"
+                maxlength="12">
+              <small class="form-hint">8-12 caracteres, alfanumérica, al menos una minúscula y una mayúscula</small>
+              <div *ngIf="hasFieldError('password')" class="error-message">
+                {{ getFieldErrorMessage('password') }}
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="confirmPassword" class="form-label">
+                Confirmar Contraseña <span class="required">*</span>
+              </label>
+              <input 
+                type="password" 
+                id="confirmPassword"
+                formControlName="confirmPassword"
+                class="form-control"
+                [class.error]="hasFieldError('confirmPassword') || hasPasswordMismatch()"
+                placeholder="Repetir contraseña"
+                maxlength="12">
+              <div *ngIf="hasPasswordMismatch()" class="error-message">
+                Las contraseñas no coinciden. Por favor, ingrese la misma contraseña en ambos campos para confirmar que sea correcta.
+              </div>
+              <div *ngIf="hasFieldError('confirmPassword') && !hasPasswordMismatch()" class="error-message">
+                {{ getFieldErrorMessage('confirmPassword') }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Configuración de la temporada -->
+        <div class="form-section">
+          <h3 class="section-title">Configuración de Playoffs</h3>
+          
+          <!-- Tipo de playoffs -->
+          <div class="form-group">
+            <label class="form-label">
+              Formato de Playoffs <span class="required">*</span>
+            </label>
+            <div class="radio-group">
+              <div *ngFor="let option of playoffOptions" class="radio-option">
+                <input 
+                  type="radio" 
+                  [id]="'playoff-' + option.value"
+                  [value]="option.value"
+                  formControlName="playoffType"
+                  class="form-radio">
+                <label [for]="'playoff-' + option.value" class="radio-label">
+                  {{ option.label }}
+                </label>
+              </div>
+            </div>
+            <small class="form-hint">Selecciona el formato de playoffs que prefieres</small>
+          </div>
+        </div>
+
+        <!-- Información del comisionado -->
+        <div class="form-section">
+          <h3 class="section-title">Tu Equipo (Comisionado)</h3>
+          
+          <!-- Nombre del equipo del comisionado -->
+          <div class="form-group">
+            <label for="commissionerTeamName" class="form-label">
+              Nombre de tu Equipo <span class="required">*</span>
+            </label>
+            <input 
+              type="text" 
+              id="commissionerTeamName"
+              formControlName="commissionerTeamName"
+              class="form-control"
+              [class.error]="hasFieldError('commissionerTeamName')"
+              placeholder="Ej: Los Invencibles"
+              maxlength="100"
+              (input)="updateAliasPreview()">
+            <small class="form-hint">
+              <span *ngIf="getAliasPreview()">Alias generado: <strong>{{ getAliasPreview() }}</strong></span>
+              <span *ngIf="!getAliasPreview()">Se generará automáticamente un alias único basado en el nombre</span>
+            </small>
+            <div *ngIf="hasFieldError('commissionerTeamName')" class="error-message">
+              {{ getFieldErrorMessage('commissionerTeamName') }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Configuraciones por defecto -->
+        <div class="form-section">
+          <h3 class="section-title">Configuraciones por Defecto</h3>
+          <div class="default-settings-info">
+            <div class="info-card">
+              <h4>Posiciones por Defecto</h4>
+              <p>1 QB, 2 RB, 2 WR, 1 TE, 1 FLEX (RB/WR), 1 K, 1 DEF, 6 Banca, 3 IR</p>
+            </div>
+            <div class="info-card">
+              <h4>Sistema de Puntuación por Defecto</h4>
+              <div class="scoring-details">
+                <div class="scoring-section">
+                  <h5>Ofensiva</h5>
+                  <ul>
+                    <li>Passing Yards: 1 punto cada 25 yardas</li>
+                    <li>Passing Touchdowns: 4 puntos</li>
+                    <li>Interceptions Thrown: -2 puntos</li>
+                    <li>Rushing Yards: 1 punto cada 10 yardas</li>
+                    <li>Receiving Yards: 1 punto cada 10 yardas</li>
+                    <li>Receptions: 1 punto</li>
+                    <li>Rush/Recv Touchdowns: 6 puntos</li>
+                  </ul>
+                </div>
+                <div class="scoring-section">
+                  <h5>Defensiva</h5>
+                  <ul>
+                    <li>Sacks: 1 punto</li>
+                    <li>Interceptions: 2 puntos</li>
+                    <li>Fumbles Recovered: 2 puntos</li>
+                    <li>Safeties: 2 puntos</li>
+                    <li>Touchdowns: 6 puntos</li>
+                    <li>Team Def 2-point Return: 2 puntos</li>
+                  </ul>
+                </div>
+                <div class="scoring-section">
+                  <h5>Kicker</h5>
+                  <ul>
+                    <li>PAT Made: 1 punto</li>
+                    <li>FG Made 0-50: 3 puntos</li>
+                    <li>FG Made 50+: 5 puntos</li>
+                  </ul>
+                </div>
+                <div class="scoring-section">
+                  <h5>Puntos Permitidos (Defensa)</h5>
+                  <ul>
+                    <li>≤10 puntos: +5 puntos</li>
+                    <li>≤20 puntos: +2 puntos</li>
+                    <li>≤30 puntos: 0 puntos</li>
+                    <li>>30 puntos: -2 puntos</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            <div class="info-card">
+              <h4>Otras Configuraciones</h4>
+              <ul>
+                <li>Estado inicial: Pre-Draft</li>
+                <li>Puntos decimales: Activados</li>
+                <li>Límite de intercambios: Desactivado</li>
+                <li>Límite de agentes libres: Desactivado</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Botones de acción -->
+        <div class="form-actions">
+          <button 
+            type="button" 
+            class="btn btn-secondary"
+            (click)="router.navigate(['/dashboard'])"
+            [disabled]="isSubmitting">
+            Cancelar
+          </button>
+          
+          <button 
+            type="submit" 
+            class="btn btn-primary"
+            [disabled]="leagueForm.invalid || isSubmitting || !nameAvailable || isCheckingName">
+            <span *ngIf="isSubmitting" class="spinner"></span>
+            {{ isSubmitting ? 'Creando Liga...' : 'Crear Liga' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

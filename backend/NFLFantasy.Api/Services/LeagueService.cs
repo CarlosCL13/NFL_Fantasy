@@ -128,6 +128,12 @@ namespace NFLFantasy.Api.Services
             var defaultPositions = "1 QB, 2 RB, 1 K, 1 DEF, 2 WR, 1 RB/WR, 1 TE, 6 BN, 3 IR";
             var defaultScoring = "PassingYards:1/25,PassingTD:4,IntThrown:-2,RushingYards:1/10,Receptions:1,ReceivingYards:1/10,RushRecvTD:6,Sacks:1,Interceptions:2,FumblesRecovered:2,Safeties:2,Touchdowns:6,TeamDef2ptReturn:2,PATMade:1,FG0-50:3,FG50+:5,PointsAllowed<=10:5,PointsAllowed<=20:2,PointsAllowed<=30:0,PointsAllowed>30:-2";
 
+            // Validar que el nombre del equipo del comisionado no exista globalmente (opcional)
+            // o por lo menos verificar que el alias generado sea único en el sistema
+            var aliasExists = await _context.Teams.AnyAsync(t => t.Alias == dto.CommissionerAlias);
+            if (aliasExists)
+                return (false, "El alias del equipo ya existe en el sistema. Intente con un nombre de equipo diferente.", null, null);
+
             // Crear liga
             var league = new League
             {

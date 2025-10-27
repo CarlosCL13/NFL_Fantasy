@@ -1,0 +1,64 @@
+<h2>Buscar ligas por temporada</h2>
+
+<!-- Selección de temporada -->
+<div class="mb-3">
+  <label for="seasonSelect"><strong>Seleccionar temporada:</strong></label>
+  <select
+    id="seasonSelect"
+    class="form-select"
+    [(ngModel)]="selectedSeasonId"
+    (change)="onSelectSeason()"
+  >
+    <option value="" disabled selected>-- Selecciona una --</option>
+    <option *ngFor="let s of seasons" [value]="s.seasonId">{{ s.name }}</option>
+  </select>
+</div>
+
+<!-- Listado de ligas -->
+<div *ngIf="leagues.length > 0" class="mt-4">
+  <h3>Ligas disponibles</h3>
+  <ul class="list-group">
+    <li
+      *ngFor="let l of leagues"
+      class="list-group-item d-flex justify-content-between align-items-center"
+    >
+      <div>
+        <strong>{{ l.name }}</strong> — Activa: {{ l.isActive ? 'Sí' : 'No' }}
+      </div>
+      <button class="btn btn-primary btn-sm" (click)="selectLeague(l.leagueId!)">Unirme</button>
+    </li>
+  </ul>
+</div>
+
+<!-- Formulario para unirse -->
+<div *ngIf="joinForm.leagueId" class="mt-4">
+  <h4>Unirse a la liga seleccionada</h4>
+
+  <form (ngSubmit)="joinLeague()" #joinFormRef="ngForm" class="p-3 border rounded bg-light">
+    <div class="mb-3">
+      <label><strong>Alias:</strong></label>
+      <input type="text" class="form-control" [(ngModel)]="joinForm.alias" name="alias" required />
+    </div>
+
+    <div class="mb-3">
+      <label><strong>Nombre del equipo:</strong></label>
+      <input
+        type="text"
+        class="form-control"
+        [(ngModel)]="joinForm.teamName"
+        name="teamName"
+        required
+      />
+    </div>
+
+    <div class="mb-3">
+      <label><strong>Contraseña (si aplica):</strong></label>
+      <input type="password" class="form-control" [(ngModel)]="joinForm.password" name="password" />
+    </div>
+
+    <div class="d-flex justify-content-end">
+      <button type="submit" class="btn btn-success me-2">Confirmar unión</button>
+      <button type="button" class="btn btn-secondary" (click)="cancelJoin()">Cancelar</button>
+    </div>
+  </form>
+</div>

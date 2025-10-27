@@ -28,10 +28,10 @@ export class LoginComponent {
     if (this.form.invalid) return;
     this.auth.login(this.form.value as any).subscribe({
       next: () => {
-        alert('Logueado');
-        this.router.navigate(['/teams/create']);
+        alert('¡Bienvenido! Has iniciado sesión correctamente.');
+        this.router.navigate(['/dashboard']);
       },
-      error: () => alert('Error en login'),
+      error: () => alert('Error en el inicio de sesión. Verifique sus credenciales.'),
     });
   }
 }

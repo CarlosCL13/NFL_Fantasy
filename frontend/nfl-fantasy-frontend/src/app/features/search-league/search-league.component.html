@@ -5,7 +5,7 @@
   <label>Seleccionar temporada:</label>
   <select [(ngModel)]="selectedSeasonId" (change)="onSelectSeason()">
     <option value="" disabled selected>-- Selecciona una --</option>
-    <option *ngFor="let s of seasons" [value]="s.id">{{ s.name }}</option>
+    <option *ngFor="let s of seasons" [value]="s.seasonId">{{ s.name }}</option>
   </select>
 </div>
 
@@ -15,7 +15,7 @@
   <ul>
     <li *ngFor="let l of leagues">
       <strong>{{ l.name }}</strong> (Activa: {{ l.isActive ? 'Sí' : 'No' }})
-      <button (click)="joinForm.leagueId = l.id">Unirme</button>
+      <button (click)="joinForm.leagueId = l.leagueId!; joinLeague()">Unirme</button>
     </li>
   </ul>
 </div>

@@ -208,29 +208,65 @@ export class SeasonCreateComponent {
     this.seasonService.getCurrentSeason().subscribe({
       next: (season) => {
         this.currentSeasonInfo = season;
+        this.updateCurrentSeasonControlState();
       },
       error: (error) => {
-        // No hay temporada actual, esto es normal
-        this.currentSeasonInfo = null;
+        // Manejo de errores más específico
+        console.warn('Error al cargar temporada actual:', error);
+        if (error.status === 404) {
+          // No hay temporada actual, esto es normal
+          this.currentSeasonInfo = null;
+        } else if (error.status === 500) {
+          // Error del servidor, probablemente base de datos vacía
+          console.warn('Error del servidor al obtener temporada actual. Es probable que no haya temporadas en la base de datos.');
+          this.currentSeasonInfo = null;
+        } else {
+          // Otros errores
+          this.currentSeasonInfo = null;
+        }
+        this.updateCurrentSeasonControlState();
       }
     });
   }
+
+  /**
+   * Actualiza el estado del control isCurrent basado en la información de temporada actual
+   */
+  private updateCurrentSeasonControlState(): void {
+    const isCurrentControl = this.seasonForm.get('isCurrent');
+    if (!isCurrentControl) return;
+
+    if (this.currentSeasonInfo && !isCurrentControl.value) {
+      // Si hay una temporada actual y el checkbox no está marcado, deshabilitar
+      // Usar { emitEvent: false } para evitar el bucle infinito
+      if (isCurrentControl.enabled) {
+        isCurrentControl.disable({ emitEvent: false });
+      }
+    } else {
+      // Si no hay temporada actual o el checkbox está marcado, habilitar
+      if (isCurrentControl.disabled) {
+        isCurrentControl.enable({ emitEvent: false });
+      }
+    }
+  }
+
+
 
   /**
    * Verifica si se puede marcar como temporada actual
    * @returns true si se puede marcar como actual
    */
   canSetAsCurrent(): boolean {
-    return !this.currentSeasonInfo || !this.seasonForm.get('isCurrent')?.value;
+    return !this.currentSeasonInfo || this.seasonForm.get('isCurrent')?.value;
   }
 
   /**
-   * Obtiene mensaje informativo sobre temporada actual
+   * Obtiene el mensaje informativo sobre la temporada actual
    * @returns Mensaje informativo
    */
   getCurrentSeasonMessage(): string {
     if (!this.currentSeasonInfo) {
-      return 'No hay temporada activa actualmente';
+      return '';
     }
     return `Temporada actual: "${this.currentSeasonInfo.name}" (${new Date(this.currentSeasonInfo.startDate).getFullYear()})`;
   }

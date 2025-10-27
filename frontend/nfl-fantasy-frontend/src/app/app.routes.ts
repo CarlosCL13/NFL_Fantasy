@@ -3,6 +3,7 @@ import { LoginComponent } from './features/auth/login/login.component';
 import { RegisterComponent } from './features/auth/register/register.component';
 import { TeamCreateComponent } from './features/teams/team-create/team-create.component';
 import { SeasonCreateComponent } from './features/season/season-create/season-create.component';
+import { SearchLeagueComponent } from './features/search-league/search-league.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
@@ -10,4 +11,5 @@ export const routes: Routes = [
   { path: 'register', component: RegisterComponent },
   { path: 'teams/create', component: TeamCreateComponent },
   { path: 'seasons/create', component: SeasonCreateComponent },
+  { path: 'leagues/search', component: SearchLeagueComponent }, //
 ];

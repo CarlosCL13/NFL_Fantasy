@@ -34,13 +34,20 @@ namespace NFLFantasy.Api.Services
         
         public async Task<List<League>> SearchLeaguesAsync(SearchLeagueDto dto)
         {
+            // Crea una consulta base
             var query = _context.Leagues.AsQueryable();
+
+            // Aplica filtros según el DTO
             if (!string.IsNullOrWhiteSpace(dto.Name))
                 query = query.Where(l => l.Name.Contains(dto.Name));
+
             if (dto.SeasonId.HasValue)
                 query = query.Where(l => l.SeasonId == dto.SeasonId.Value);
+
             if (dto.IsActive.HasValue)
                 query = query.Where(l => l.IsActive == dto.IsActive.Value);
+
+            // Ejecuta la consulta y devuelve los resultados
             return await query.ToListAsync();
         }
 
@@ -52,21 +59,35 @@ namespace NFLFantasy.Api.Services
         /// <returns>Tupla con éxito y mensaje de error si aplica.</returns>
         public async Task<(bool Success, string? Error)> JoinLeagueAsync(int userId, JoinLeagueDto dto)
         {
+            // Validar existencia de la liga y contraseña
             var league = await _context.Leagues
                 .Include(l => l.Teams)
                 .FirstOrDefaultAsync(l => l.LeagueId == dto.LeagueId);
+
+            // Valida que la liga exista
             if (league == null)
                 return (false, "La liga no existe.");
+
+            // Valida que la liga esté activa
             if (!league.IsActive)
                 return (false, "La liga no está activa.");
+
+            // Valida la contraseña
             if (!BCrypt.Net.BCrypt.Verify(dto.Password, league.PasswordHash))
                 return (false, "Datos incorrectos."); // error genérico
+
+            // Valida que haya cupos
             if (league.Teams.Count >= league.MaxTeams)
                 return (false, "No hay cupos disponibles en la liga.");
+
+            // Valida que el alias y nombre de equipo sean únicos en la liga
             if (league.Teams.Any(t => t.Alias == dto.Alias))
                 return (false, "El alias ya existe en la liga. Elige otro.");
+
             if (league.Teams.Any(t => t.TeamName == dto.TeamName))
                 return (false, "El nombre de equipo ya existe en la liga. Elige otro.");
+            
+            // Valida que el usuario no pertenezca ya a la liga
             if (league.Teams.Any(t => t.UserId == userId))
                 return (false, "Ya perteneces a esta liga.");
 
@@ -178,6 +199,7 @@ namespace NFLFantasy.Api.Services
                 ("IR", 3)
             };
 
+            // Agregar posiciones por defecto a la liga
             foreach (var (abrev, cantidad) in posicionesPorDefecto)
             {
                 var posicion = await _context.Positions.FirstOrDefaultAsync(p => p.Abbreviation == abrev);
@@ -217,6 +239,7 @@ namespace NFLFantasy.Api.Services
                 ("Points Allowed >30", -2)
             };
 
+            // Agregar reglas de puntuación por defecto a la liga
             foreach (var (nombre, valor) in scoringPorDefecto)
             {
                 var regla = await _context.Scorings.FirstOrDefaultAsync(s => s.Name == nombre);
@@ -231,6 +254,7 @@ namespace NFLFantasy.Api.Services
                 }
             }
 
+            // Guardar posiciones y reglas por defecto
             await _context.SaveChangesAsync();
 
             // Crear equipo del comisionado

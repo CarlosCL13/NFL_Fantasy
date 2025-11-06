@@ -5,9 +5,24 @@ namespace NFLFantasy.Api.Models
     /// </summary>
     public class Position
     {
-    public int PositionId { get; set; }
-    public string Name { get; set; } = string.Empty;
-    public string Abbreviation { get; set; } = string.Empty;
-    public string? Description { get; set; }
+        /// <summary>
+        /// Identificador único de la posición.
+        /// </summary>
+        public int PositionId { get; set; }
+
+        /// <summary>
+        /// Nombre de la posición.
+        /// </summary>
+        public string Name { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Abreviación de la posición.
+        /// </summary>
+        public string Abbreviation { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Descripción de la posición.
+        /// </summary>
+        public string? Description { get; set; }
     }
 }

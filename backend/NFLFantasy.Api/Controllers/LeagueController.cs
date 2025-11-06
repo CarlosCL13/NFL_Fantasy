@@ -26,7 +26,10 @@ namespace NFLFantasy.Api.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> Search([FromQuery] SearchLeagueDto dto)
         {
+            // Llama al servicio para buscar ligas con los filtros proporcionados
             var leagues = await _leagueService.SearchLeaguesAsync(dto);
+
+            // Devuelve la lista de ligas encontradas
             return Ok(leagues);
         }
 
@@ -38,23 +41,35 @@ namespace NFLFantasy.Api.Controllers
         [HttpPost("join")]
         public async Task<IActionResult> Join([FromBody] JoinLeagueDto dto)
         {
+            // Obtiene el userId real del usuario autenticado desde el token JWT, con validación
             var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            // Valida el userId obtenido del token JWT
             if (string.IsNullOrEmpty(userIdClaim))
                 return Unauthorized(new { error = "No se encontró el identificador de usuario en el token JWT. Por favor, vuelve a iniciar sesión." });
+
+            // Convierte el userId a entero
             int userId;
+
+            // Valida la conversión del userId
             if (!int.TryParse(userIdClaim, out userId))
                 return Unauthorized(new { error = "El identificador de usuario en el token JWT no es válido." });
 
+            // Valida el modelo de entrada
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
                 return BadRequest(new { error = "Datos de entrada inválidos.", details = errors });
             }
 
+            // Llama al servicio para unir al usuario a la liga
             var (success, error) = await _leagueService.JoinLeagueAsync(userId, dto);
+
+            // Verifica si hubo un error al unir a la liga
             if (!success)
                 return BadRequest(new { error = error ?? "No se pudo unir a la liga." });
 
+            // Si la unión fue exitosa, devuelve un mensaje de éxito
             return Ok(new { message = "Te has unido exitosamente a la liga." });
         }
 
@@ -66,24 +81,35 @@ namespace NFLFantasy.Api.Controllers
         {
             // Obtiene el userId real del usuario autenticado desde el token JWT, con validación
             var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            // Valida el userId obtenido del token JWT
             if (string.IsNullOrEmpty(userIdClaim))
                 return Unauthorized(new { error = "No se encontró el identificador de usuario en el token JWT. Por favor, vuelve a iniciar sesión." });
+
+            // Convierte el userId a entero
             int userId;
+
+            // Valida la conversión del userId
             if (!int.TryParse(userIdClaim, out userId))
                 return Unauthorized(new { error = "El identificador de usuario en el token JWT no es válido." });
 
+            // Valida el modelo de entrada
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
                 return BadRequest(new { error = "Datos de entrada inválidos.", details = errors });
             }
 
+            // Llama al servicio para crear la liga
             var (success, error, league, remainingSpots) = await _leagueService.CreateLeagueAsync(dto, userId);
+
+            // Verifica si hubo un error al crear la liga
             if (!success)
             {
                 return BadRequest(new { error = error ?? "No se pudo crear la liga por un error desconocido." });
             }
 
+            // Devuelve respuesta exitosa
             return Ok(new
             {
                 message = "Liga creada exitosamente.",

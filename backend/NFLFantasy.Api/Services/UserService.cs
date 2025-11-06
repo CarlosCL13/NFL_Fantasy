@@ -58,15 +58,21 @@ namespace NFLFantasy.Api.Services
             // Hash de la contraseña
             var passwordHash = HashPassword(dto.Password);
 
-            // Crear usuario 
+            // Buscar el rol 'manager' en la base de datos
+            var managerRole = await _context.Roles.FirstOrDefaultAsync(r => r.Name == "manager");
+            if (managerRole == null)
+                return (false, "No se encontró el rol 'manager' en la base de datos. Contacta al administrador.", null);
+
+            // Crear usuario con rol 'manager'
             var user = new User
             {
                 Name = dto.Name,
                 Email = dto.Email,
                 Alias = dto.Alias,
                 PasswordHash = passwordHash,
-                ProfileImage = profileImageFileName ?? AppConstants.DefaultProfileImage
-                // CreatedAt, Role, Status, Language usan valores por defecto
+                ProfileImage = profileImageFileName ?? AppConstants.DefaultProfileImage,
+                RoleId = managerRole.RoleId
+                // CreatedAt, Status, Language usan valores por defecto
             };
 
             // Guardar en la base de datos
@@ -87,7 +93,9 @@ namespace NFLFantasy.Api.Services
         public async Task<(bool Success, string? Error, User? User, string? Token)> LoginAsync(string email, string password)
         {
             // Buscar usuario por email
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+            var user = await _context.Users
+                .Include(u => u.Role)
+                .FirstOrDefaultAsync(u => u.Email == email);
 
             // Validar usuario encontrado
             if (user == null)

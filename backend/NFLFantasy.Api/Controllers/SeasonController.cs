@@ -54,8 +54,10 @@ namespace NFLFantasy.Api.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<SearchSeasonDto>>> GetAll()
         {
+            // Llama al servicio para obtener todas las temporadas
             var seasons = await _seasonService.GetAllSeasonsAsync();
 
+            // Mapea las temporadas al DTO de respuesta
             var result = seasons.Select(s => new SearchSeasonDto
             {
                 SeasonId = s.SeasonId,
@@ -74,6 +76,7 @@ namespace NFLFantasy.Api.Controllers
                 }).ToList()
             });
 
+            // Devuelve la lista de temporadas
             return Ok(result);
         }
 
@@ -83,7 +86,10 @@ namespace NFLFantasy.Api.Controllers
         [HttpGet("check-name/{name}")]
         public async Task<IActionResult> CheckNameAvailability(string name)
         {
+            // Llama al servicio para verificar la disponibilidad del nombre
             var isAvailable = await _seasonService.IsSeasonNameAvailableAsync(name);
+
+            // Devuelve el resultado
             return Ok(new { 
                 name = name, 
                 isAvailable = isAvailable,
@@ -97,11 +103,34 @@ namespace NFLFantasy.Api.Controllers
         [HttpGet("current")]
         public async Task<IActionResult> GetCurrentSeason()
         {
+            // Llama al servicio para obtener la temporada actual
             var currentSeason = await _seasonService.GetCurrentSeasonAsync();
+
+            // Verifica si hay una temporada activa
             if (currentSeason == null)
                 return NotFound(new { message = "No hay temporada activa" });
 
-            return Ok(currentSeason);
+            // Mapea la temporada al DTO de respuesta
+            var result = new SearchSeasonDto
+            {
+                SeasonId = currentSeason.SeasonId,
+                Name = currentSeason.Name,
+                WeeksCount = currentSeason.WeeksCount,
+                StartDate = currentSeason.StartDate,
+                EndDate = currentSeason.EndDate,
+                IsCurrent = currentSeason.IsCurrent,
+                CreatedAt = currentSeason.CreatedAt,
+                Weeks = currentSeason.Weeks.Select(w => new WeekDto
+                {
+                    WeekId = w.WeekId,
+                    Number = w.Number,
+                    StartDate = w.StartDate,
+                    EndDate = w.EndDate
+                }).ToList()
+            };
+
+            // Devuelve la temporada actual
+            return Ok(result);
         }
 
         /// <summary>
@@ -110,7 +139,10 @@ namespace NFLFantasy.Api.Controllers
         [HttpPost("check-conflicts")]
         public async Task<IActionResult> CheckConflicts([FromBody] CreateSeasonDto dto)
         {
+            // Llama al servicio para obtener información sobre conflictos potenciales
             var conflictInfo = await _seasonService.GetConflictInfoAsync(dto);
+
+            // Devuelve el resultado
             return Ok(conflictInfo);
         }
     }

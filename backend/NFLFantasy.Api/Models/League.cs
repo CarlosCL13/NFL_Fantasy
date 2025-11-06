@@ -7,6 +7,7 @@ namespace NFLFantasy.Api.Models
     /// Representa una liga de fantasía NFL.
     /// </summary>
     public class League
+    
     {
         /// <summary>
         /// Indica si la liga está activa.
@@ -69,6 +70,11 @@ namespace NFLFantasy.Api.Models
         public User Commissioner { get; set; } = null!;
 
         /// <summary>
+        /// Cupos restantes disponibles en la liga.
+        /// </summary>
+        public int RemainingSpots { get; set; }
+
+        /// <summary>
         /// Configuraciones específicas de la liga.
         /// </summary>
         public int PlayoffType { get; set; } // 4 o 6
@@ -78,15 +84,6 @@ namespace NFLFantasy.Api.Models
         /// </summary>
         public bool AllowDecimalPoints { get; set; } = true;
 
-        /// <summary>
-        /// Posiciones predeterminadas para los equipos.
-        /// </summary>
-        public string DefaultPositions { get; set; } = string.Empty;
-
-        /// <summary>
-        /// Sistema de puntuación predeterminado para la liga.
-        /// </summary>
-        public string DefaultScoring { get; set; } = string.Empty;
 
         /// <summary>
         /// Indica si la fecha límite de intercambios está activa.

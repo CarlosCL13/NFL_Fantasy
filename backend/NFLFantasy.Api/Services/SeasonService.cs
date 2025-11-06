@@ -51,9 +51,17 @@ namespace NFLFantasy.Api.Services
                 (dto.StartDate <= s.EndDate && dto.EndDate >= s.StartDate)))
                 return (false, "Las fechas se traslapan con otra temporada existente.", null);
 
-            // Validar única temporada actual
-            if (dto.IsCurrent && await _context.Seasons.AnyAsync(s => s.IsCurrent))
-                return (false, "Ya existe una temporada con estado actual.", null);
+
+            // Si se marca como actual, desactivar la temporada actual existente
+            if (dto.IsCurrent)
+            {
+                var temporadaActual = await _context.Seasons.FirstOrDefaultAsync(s => s.IsCurrent);
+                if (temporadaActual != null)
+                {
+                    temporadaActual.IsCurrent = false;
+                    _context.Seasons.Update(temporadaActual);
+                }
+            }
 
             // Generar semanas
             var totalDays = (dto.EndDate - dto.StartDate).TotalDays + 1; // incluir el día final
@@ -118,7 +126,8 @@ namespace NFLFantasy.Api.Services
         /// Verifica si un nombre de temporada está disponible.
         /// </summary>
         public async Task<bool> IsSeasonNameAvailableAsync(string name)
-        {
+        {   
+            // Verificar disponibilidad del nombre
             return !await _context.Seasons.AnyAsync(s => s.Name.ToLower() == name.ToLower());
         }
 
@@ -137,11 +146,13 @@ namespace NFLFantasy.Api.Services
         /// </summary>
         public async Task<object> GetConflictInfoAsync(CreateSeasonDto dto)
         {
+            // Verificar conflictos potenciales
             var nameExists = await _context.Seasons.AnyAsync(s => s.Name.ToLower() == dto.Name.ToLower());
             var currentSeasonExists = await _context.Seasons.AnyAsync(s => s.IsCurrent);
             var dateOverlap = await _context.Seasons.AnyAsync(s =>
                 (dto.StartDate <= s.EndDate && dto.EndDate >= s.StartDate));
 
+            // Devolver resumen de conflictos
             return new
             {
                 nameConflict = nameExists,

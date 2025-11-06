@@ -103,7 +103,7 @@ namespace NFLFantasy.Api.Controllers
             if (!success)
                 return BadRequest(new { error = error ?? "No se pudo iniciar sesión. Por favor, verifica tus credenciales e inténtalo de nuevo." });
 
-            // Devuelve respuesta exitosa con el token JWT
+            // Devuelve respuesta exitosa con el token JWT y el rol
             return Ok(new
             {
                 message = "Inicio de sesión exitoso.",
@@ -112,8 +112,8 @@ namespace NFLFantasy.Api.Controllers
                     name = user.Name,
                     email = user.Email,
                     alias = user.Alias,
-                    profileImage = user.ProfileImage
-                    // Agrega aquí otros campos públicos si los necesitas
+                    profileImage = user.ProfileImage,
+                    role = user.Role != null ? user.Role.Name : null
                 },
                 token
             });

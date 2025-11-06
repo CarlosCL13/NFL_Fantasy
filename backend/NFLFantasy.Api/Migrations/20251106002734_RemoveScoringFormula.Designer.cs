@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NFLFantasy.Api.Data;
 
@@ -11,9 +12,11 @@ using NFLFantasy.Api.Data;
 namespace NFLFantasy.Api.Migrations
 {
     [DbContext(typeof(FantasyContext))]
-    partial class FantasyContextModelSnapshot : ModelSnapshot
+    [Migration("20251106002734_RemoveScoringFormula")]
+    partial class RemoveScoringFormula
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -115,9 +118,6 @@ namespace NFLFantasy.Api.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("PlayoffType")
-                        .HasColumnType("int");
-
-                    b.Property<int>("RemainingSpots")
                         .HasColumnType("int");
 
                     b.Property<int>("SeasonId")

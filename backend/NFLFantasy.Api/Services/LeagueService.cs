@@ -17,6 +17,7 @@ namespace NFLFantasy.Api.Services
     {
         // Referencia al contexto de la base de datos
         private readonly FantasyContext _context;
+        private readonly NFLFantasy.Api.Repositories.LeagueRepository _leagueRepository;
 
         /// <summary>
         /// Constructor del servicio LeagueService.
@@ -24,6 +25,7 @@ namespace NFLFantasy.Api.Services
         public LeagueService(FantasyContext context)
         {
             _context = context;
+            _leagueRepository = new NFLFantasy.Api.Repositories.LeagueRepository(context);
         }
 
         /// <summary>
@@ -134,33 +136,17 @@ namespace NFLFantasy.Api.Services
         /// </remarks>
         public async Task<(bool Success, string? Error, League? League, int? RemainingSpots)> CreateLeagueAsync(CreateLeagueDto dto, int userId)
         {
-            // Validar nombre único
-            if (await _context.Leagues.AnyAsync(l => l.Name == dto.Name))
-                return (false, "Ya existe una liga con ese nombre.", null, null);
 
-            // Validar cantidad de equipos permitida
-            var allowedTeams = new[] { 4, 6, 8, 10, 12, 14, 16, 18, 20 };
-            if (!allowedTeams.Contains(dto.MaxTeams))
-                return (false, "La cantidad de equipos no es válida.", null, null);
+            // Validaciones centralizadas en LeagueValidator
+            var (isValid, error) = await NFLFantasy.Api.Validators.LeagueValidator.ValidateCreateLeagueAsync(dto, _context);
+            if (!isValid)
+                return (false, error, null, null);
 
-            // Validar formato de contraseña
-            if (!System.Text.RegularExpressions.Regex.IsMatch(dto.Password, "^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9]).{8,12}$"))
-                return (false, "La contraseña no cumple el formato requerido.", null, null);
-
-            // Buscar temporada actual
-            var season = await _context.Seasons.FirstOrDefaultAsync(s => s.IsCurrent);
-            if (season == null)
-                return (false, "No hay una temporada actual activa.", null, null);
+            // Buscar temporada actual (ya validado que existe)
+            var season = await _leagueRepository.GetCurrentSeasonAsync();
 
             // Hash de la contraseña
             var passwordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
-
-
-            // Validar que el nombre del equipo del comisionado no exista globalmente (opcional)
-            // o por lo menos verificar que el alias generado sea único en el sistema
-            var aliasExists = await _context.Teams.AnyAsync(t => t.Alias == dto.CommissionerAlias);
-            if (aliasExists)
-                return (false, "El alias del equipo ya existe en el sistema. Intente con un nombre de equipo diferente.", null, null);
 
             // Crear liga
             var league = new League
@@ -171,7 +157,7 @@ namespace NFLFantasy.Api.Services
                 PasswordHash = passwordHash,
                 CreatedAt = DateTime.UtcNow,
                 Status = "Pre-Draft",
-                SeasonId = season.SeasonId,
+                SeasonId = season!.SeasonId,
                 CommissionerId = userId,
                 PlayoffType = dto.PlayoffType,
                 AllowDecimalPoints = true,
@@ -181,11 +167,43 @@ namespace NFLFantasy.Api.Services
                 RemainingSpots = dto.MaxTeams - 1 // Se descuenta el equipo del comisionado
             };
 
-            // Guardar liga primero para obtener LeagueId
-            _context.Leagues.Add(league);
-            await _context.SaveChangesAsync();
+            // Usar transacción para atomicidad
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                await _leagueRepository.AddLeagueAsync(league);
+                await AddDefaultPositionsAsync(league.LeagueId);
+                await AddDefaultScoringsAsync(league.LeagueId);
+                await _context.SaveChangesAsync();
 
-            // Poblar posiciones por defecto
+                var team = new Team
+                {
+                    TeamName = dto.CommissionerTeamName,
+                    Alias = dto.CommissionerAlias,
+                    UserId = userId,
+                    LeagueId = league.LeagueId,
+                    CreatedAt = DateTime.UtcNow
+                };
+                await _leagueRepository.AddTeamAsync(team);
+
+                await transaction.CommitAsync();
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                return (false, ex.Message, null, null);
+            }
+
+            var remainingSpots = CalculateRemainingSpots(league.MaxTeams);
+            return (true, null, league, remainingSpots);
+        }
+
+
+        /// <summary>
+        /// Agrega posiciones por defecto a una liga
+        /// </summary>
+        private async Task AddDefaultPositionsAsync(int leagueId)
+        {
             var posicionesPorDefecto = new List<(string abrev, int cantidad)>
             {
                 ("QB", 1),
@@ -198,8 +216,6 @@ namespace NFLFantasy.Api.Services
                 ("BN", 6),
                 ("IR", 3)
             };
-
-            // Agregar posiciones por defecto a la liga
             foreach (var (abrev, cantidad) in posicionesPorDefecto)
             {
                 var posicion = await _context.Positions.FirstOrDefaultAsync(p => p.Abbreviation == abrev);
@@ -207,14 +223,21 @@ namespace NFLFantasy.Api.Services
                 {
                     _context.DefaultPositions.Add(new DefaultPosition
                     {
-                        LeagueId = league.LeagueId,
+                        LeagueId = leagueId,
                         PositionId = posicion.PositionId,
                         Quantity = cantidad
                     });
                 }
             }
+        }
 
-            // Poblar reglas de puntuación por defecto
+        /// <summary>
+        /// Agrega reglas de puntuación por defecto a una liga
+        /// </summary>
+        /// <param name="leagueId"></param>
+        /// <returns></returns>
+        private async Task AddDefaultScoringsAsync(int leagueId)
+        {
             var scoringPorDefecto = new List<(string nombre, double valor)>
             {
                 ("Passing Yards", 1.0/25),
@@ -238,8 +261,6 @@ namespace NFLFantasy.Api.Services
                 ("Points Allowed <=30", 0),
                 ("Points Allowed >30", -2)
             };
-
-            // Agregar reglas de puntuación por defecto a la liga
             foreach (var (nombre, valor) in scoringPorDefecto)
             {
                 var regla = await _context.Scorings.FirstOrDefaultAsync(s => s.Name == nombre);
@@ -247,35 +268,17 @@ namespace NFLFantasy.Api.Services
                 {
                     _context.DefaultScorings.Add(new DefaultScoring
                     {
-                        LeagueId = league.LeagueId,
+                        LeagueId = leagueId,
                         ScoringId = regla.ScoringId,
                         Value = valor
                     });
                 }
             }
-
-            // Guardar posiciones y reglas por defecto
-            await _context.SaveChangesAsync();
-
-            // Crear equipo del comisionado
-            var team = new Team
-            {
-                TeamName = dto.CommissionerTeamName,
-                Alias = dto.CommissionerAlias,
-                UserId = userId,
-                LeagueId = league.LeagueId,
-                CreatedAt = DateTime.UtcNow
-            };
-
-            // Guardar equipo en la base de datos
-            _context.Teams.Add(team);
-            await _context.SaveChangesAsync();
-
-            // Calcular cupos restantes
-            var remainingSpots = league.MaxTeams - 1;
-
-            // Devolver resultado
-            return (true, null, league, remainingSpots);
         }
+
+        /// <summary>
+        /// Calcula cupos restantes tras crear el equipo del comisionado
+        /// </summary>
+        private int CalculateRemainingSpots(int maxTeams) => maxTeams - 1;
     }
 }

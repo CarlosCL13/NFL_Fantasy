@@ -56,5 +56,14 @@ namespace NFLFantasy.Api.Repositories
             return await _context.Teams.AnyAsync(t => t.Alias == alias);
         }
 
+        /// <summary>
+        /// Agrega una auditoría de liga a la base de datos.
+        /// </summary>
+        public async Task AddAuditAsync(LeagueAudit audit)
+        {
+            _context.LeagueAudits.Add(audit);
+            await _context.SaveChangesAsync();
+        }
+
     }
 }

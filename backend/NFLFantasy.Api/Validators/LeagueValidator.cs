@@ -1,6 +1,8 @@
 using System.Text.RegularExpressions;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
+using NFLFantasy.Api.Utils;
+using NFLFantasy.Api.Models;
 
 namespace NFLFantasy.Api.Validators
 {
@@ -57,6 +59,50 @@ namespace NFLFantasy.Api.Validators
                 return (false, "El alias del equipo ya existe en el sistema. Intente con un nombre de equipo diferente.");
 
             return (true, null);
+        }
+
+        /// <summary>
+        /// Validaciones centralizadas para unirse a una liga.
+        /// </summary>
+        public static async Task<(bool IsValid, string? Error, League? League)> ValidateJoinLeagueAsync(
+            int userId,
+            NFLFantasy.Api.DTO.JoinLeagueDto dto,
+            NFLFantasy.Api.Data.FantasyContext context)
+        {
+            // Validar existencia de la liga y contraseña
+            var league = await context.Leagues
+                .Include(l => l.Teams)
+                .FirstOrDefaultAsync(l => l.LeagueId == dto.LeagueId);
+
+            // Valida que la liga exista
+            if (league == null)
+                return (false, "La liga no existe.", null);
+
+            // Valida que la liga esté activa
+            if (!league.IsActive)
+                return (false, "La liga no está activa.", null);
+
+            // Valida la contraseña
+            if (!PasswordHelper.VerifyPassword(dto.Password, league.PasswordHash))
+                return (false, "La contraseña es incorrecta.", null);
+
+            // Valida que haya cupos
+            if (league.Teams.Count >= league.MaxTeams)
+                return (false, "No hay cupos disponibles en la liga.", null);
+
+            // Valida que el alias y nombre de equipo sean únicos en la liga
+            if (league.Teams.Any(t => t.Alias == dto.Alias))
+                return (false, "El alias ya existe en la liga. Elige otro.", null);
+
+            if (league.Teams.Any(t => t.TeamName == dto.TeamName))
+                return (false, "El nombre de equipo ya existe en la liga. Elige otro.", null);
+
+            // Valida que el usuario no pertenezca ya a la liga
+            if (league.Teams.Any(t => t.UserId == userId))
+                return (false, "Ya perteneces a esta liga.", null);
+
+            return (true, null, league);
+
         }
     }
 }

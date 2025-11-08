@@ -8,6 +8,7 @@ using NFLFantasy.Api.DTO;
 using NFLFantasy.Api.Models;
 using BCrypt.Net;
 
+using NFLFantasy.Api.Utils;
 namespace NFLFantasy.Api.Services
 {
     /// <summary>
@@ -29,27 +30,15 @@ namespace NFLFantasy.Api.Services
         }
 
         /// <summary>
-        /// Busca ligas por nombre, temporada y estado.
+        /// Busca ligas en la temporada actual por nombre y/o estado.
         /// </summary>
         /// <param name="dto">DTO con filtros de búsqueda.</param>
         /// <returns>Lista de ligas que cumplen los filtros.</returns>
         
         public async Task<List<League>> SearchLeaguesAsync(SearchLeagueDto dto)
         {
-            // Crea una consulta base
-            var query = _context.Leagues.AsQueryable();
-
-            // Aplica filtros según el DTO
-            if (!string.IsNullOrWhiteSpace(dto.Name))
-                query = query.Where(l => l.Name.Contains(dto.Name));
-
-            if (dto.SeasonId.HasValue)
-                query = query.Where(l => l.SeasonId == dto.SeasonId.Value);
-
-            if (dto.IsActive.HasValue)
-                query = query.Where(l => l.IsActive == dto.IsActive.Value);
-
-            // Ejecuta la consulta y devuelve los resultados
+            var currentSeason = await GetCurrentSeasonOrThrowAsync();
+            var query = BuildLeagueSearchQuery(dto, currentSeason.SeasonId);
             return await query.ToListAsync();
         }
 
@@ -61,37 +50,10 @@ namespace NFLFantasy.Api.Services
         /// <returns>Tupla con éxito y mensaje de error si aplica.</returns>
         public async Task<(bool Success, string? Error)> JoinLeagueAsync(int userId, JoinLeagueDto dto)
         {
-            // Validar existencia de la liga y contraseña
-            var league = await _context.Leagues
-                .Include(l => l.Teams)
-                .FirstOrDefaultAsync(l => l.LeagueId == dto.LeagueId);
-
-            // Valida que la liga exista
-            if (league == null)
-                return (false, "La liga no existe.");
-
-            // Valida que la liga esté activa
-            if (!league.IsActive)
-                return (false, "La liga no está activa.");
-
-            // Valida la contraseña
-            if (!BCrypt.Net.BCrypt.Verify(dto.Password, league.PasswordHash))
-                return (false, "Datos incorrectos."); // error genérico
-
-            // Valida que haya cupos
-            if (league.Teams.Count >= league.MaxTeams)
-                return (false, "No hay cupos disponibles en la liga.");
-
-            // Valida que el alias y nombre de equipo sean únicos en la liga
-            if (league.Teams.Any(t => t.Alias == dto.Alias))
-                return (false, "El alias ya existe en la liga. Elige otro.");
-
-            if (league.Teams.Any(t => t.TeamName == dto.TeamName))
-                return (false, "El nombre de equipo ya existe en la liga. Elige otro.");
-            
-            // Valida que el usuario no pertenezca ya a la liga
-            if (league.Teams.Any(t => t.UserId == userId))
-                return (false, "Ya perteneces a esta liga.");
+            // Validaciones centralizadas en LeagueValidator
+            var (isValid, error, league) = await NFLFantasy.Api.Validators.LeagueValidator.ValidateJoinLeagueAsync(userId, dto, _context);
+            if (!isValid)
+                return (false, error);
 
             // Crear equipo y registrar auditoría
             var team = new Team
@@ -99,29 +61,36 @@ namespace NFLFantasy.Api.Services
                 TeamName = dto.TeamName,
                 Alias = dto.Alias,
                 UserId = userId,
-                LeagueId = league.LeagueId,
+                LeagueId = league!.LeagueId,
                 CreatedAt = DateTime.UtcNow
             };
-            
-            league.Teams.Add(team);
 
-            // Reducir y guardar RemainingSpots
-            if (league.RemainingSpots > 0)
+            // Usar transacción para atomicidad
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
             {
-                league.RemainingSpots--;
+                await _leagueRepository.AddTeamAsync(team);
 
+                DecrementRemainingSpots(league);
+
+                var audit = new LeagueAudit
+                {
+                    UserId = userId,
+                    LeagueId = league.LeagueId,
+                    Action = "Join",
+                    Timestamp = DateTime.UtcNow
+                };
+
+                await _leagueRepository.AddAuditAsync(audit);
+                
+                await transaction.CommitAsync();
             }
-            
-            // Registrar auditoría (simplificado)
-            var audit = new LeagueAudit
+            catch
             {
-                UserId = userId,
-                LeagueId = league.LeagueId,
-                Action = "Join",
-                Timestamp = DateTime.UtcNow
-            };
-            _context.LeagueAudits.Add(audit);
-            await _context.SaveChangesAsync();
+                await transaction.RollbackAsync();
+                throw;
+            }
+
             return (true, null);
         }
 
@@ -146,7 +115,7 @@ namespace NFLFantasy.Api.Services
             var season = await _leagueRepository.GetCurrentSeasonAsync();
 
             // Hash de la contraseña
-            var passwordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
+            var passwordHash = PasswordHelper.HashPassword(dto.Password); // Se mantiene solo esta línea
 
             // Crear liga
             var league = new League
@@ -176,6 +145,7 @@ namespace NFLFantasy.Api.Services
                 await AddDefaultScoringsAsync(league.LeagueId);
                 await _context.SaveChangesAsync();
 
+                // Crear equipo del comisionado
                 var team = new Team
                 {
                     TeamName = dto.CommissionerTeamName,
@@ -186,15 +156,21 @@ namespace NFLFantasy.Api.Services
                 };
                 await _leagueRepository.AddTeamAsync(team);
 
+                // Confirmar transacción
                 await transaction.CommitAsync();
             }
+
+            // Manejo de errores
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
                 return (false, ex.Message, null, null);
             }
 
+            // Calcular cupos restantes
             var remainingSpots = CalculateRemainingSpots(league.MaxTeams);
+
+            // Retornar resultado exitoso
             return (true, null, league, remainingSpots);
         }
 
@@ -280,5 +256,41 @@ namespace NFLFantasy.Api.Services
         /// Calcula cupos restantes tras crear el equipo del comisionado
         /// </summary>
         private int CalculateRemainingSpots(int maxTeams) => maxTeams - 1;
+
+        /// <summary>
+        /// Decrementa los cupos restantes en una liga al unirse un equipo
+        /// </summary>
+        private void DecrementRemainingSpots(League league)
+        {
+            if (league.RemainingSpots > 0)
+                league.RemainingSpots--;
+        }
+
+        /// <summary>
+        /// Obtiene la temporada actual o lanza una excepción si no existe.
+        /// </summary>
+        private async Task<Season> GetCurrentSeasonOrThrowAsync()
+        {
+            var season = await _context.Seasons.FirstOrDefaultAsync(s => s.IsCurrent);
+            if (season == null)
+                throw new InvalidOperationException("No se encontró una temporada actual.");
+            return season;
+        }
+
+        /// <summary>
+        /// Construye la consulta de búsqueda de ligas según los filtros proporcionados.
+        /// </summary>
+        private IQueryable<League> BuildLeagueSearchQuery(SearchLeagueDto dto, int seasonId)
+        {
+            var query = _context.Leagues.Where(l => l.SeasonId == seasonId);
+
+            if (!string.IsNullOrWhiteSpace(dto.Name))
+                query = query.Where(l => l.Name.Contains(dto.Name));
+
+            if (dto.IsActive.HasValue)
+                query = query.Where(l => l.IsActive == dto.IsActive.Value);
+
+            return query;
+        }
     }
 }

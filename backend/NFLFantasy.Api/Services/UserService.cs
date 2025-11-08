@@ -2,7 +2,7 @@ using NFLFantasy.Api.Data;
 using NFLFantasy.Api.DTO;
 using NFLFantasy.Api.Models;
 using Microsoft.EntityFrameworkCore;
-using BCrypt.Net;
+using NFLFantasy.Api.Utils;
 using NFLFantasy.Api;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -56,7 +56,7 @@ namespace NFLFantasy.Api.Services
                 return (false, AppConstants.ErrorMissingUserFields, null);
 
             // Hash de la contraseña
-            var passwordHash = HashPassword(dto.Password);
+            var passwordHash = PasswordHelper.HashPassword(dto.Password);
 
             // Buscar el rol 'manager' en la base de datos
             var managerRole = await _context.Roles.FirstOrDefaultAsync(r => r.Name == "manager");
@@ -110,7 +110,7 @@ namespace NFLFantasy.Api.Services
             user.LastFailedLogin = user.LastFailedLogin;
 
             // Verificar contraseña
-            if (!BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
+            if (!PasswordHelper.VerifyPassword(password, user.PasswordHash))
             {
                 user.FailedLoginAttempts++;                 // Incrementar intentos fallidos
                 user.LastFailedLogin = DateTime.UtcNow;     // Actualizar fecha del último intento fallido
@@ -173,14 +173,7 @@ namespace NFLFantasy.Api.Services
             return tokenHandler.WriteToken(token);
         }
 
-        /// <summary>
-        /// Genera un hash seguro de la contraseña usando BCrypt.
-        /// </summary>S
-        private string HashPassword(string password)
-        {
-            // BCrypt hash seguro
-            return BCrypt.Net.BCrypt.HashPassword(password);
-        }
+        // Hashing de contraseña centralizado en PasswordHelper
 
         
     }

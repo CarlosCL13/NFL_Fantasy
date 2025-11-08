@@ -3,6 +3,8 @@ using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using NFLFantasy.Api.Utils;
 using NFLFantasy.Api.Models;
+using NFLFantasy.Api.Repositories;
+
 
 namespace NFLFantasy.Api.Validators
 {
@@ -30,33 +32,39 @@ namespace NFLFantasy.Api.Validators
         /// </summary>
         public static async Task<(bool IsValid, string? Error)> ValidateCreateLeagueAsync(
             NFLFantasy.Api.DTO.CreateLeagueDto dto,
-            NFLFantasy.Api.Data.FantasyContext context)
+            NFLFantasy.Api.Data.FantasyContext context,
+            NFLFantasy.Api.Repositories.LeagueRepository leagueRepository)
         {
             // Validar nombre de liga
-            if (string.IsNullOrWhiteSpace(dto.Name) || dto.Name.Length > 100)
+            if (string.IsNullOrWhiteSpace(dto.Name) || dto.Name.Length > 100){
                 return (false, "El nombre de la liga debe tener entre 1 y 100 caracteres.");
+            }
 
             // Validar nombre único de liga
-            if (await context.Leagues.AnyAsync(l => l.Name == dto.Name))
+            if (await leagueRepository.LeagueNameExistsAsync(dto.Name)){
                 return (false, "Ya existe una liga con ese nombre.");
+            }
 
             // Validar cantidad de equipos
-            if (!IsValidTeamCount(dto.MaxTeams))
+            if (!IsValidTeamCount(dto.MaxTeams)){
                 return (false, "La cantidad de equipos no es válida.");
+            }
 
             // Validar contraseña
-            if (!IsValidPassword(dto.Password))
+            if (!IsValidPassword(dto.Password)){
                 return (false, "La contraseña no cumple el formato requerido.");
+            }
 
             // Validar existencia de temporada actual
-            var season = await context.Seasons.FirstOrDefaultAsync(s => s.IsCurrent);
-            if (season == null)
+            var season = await leagueRepository.GetCurrentSeasonAsync();
+            if (season == null){
                 return (false, "No hay una temporada actual activa.");
+            }
 
             // Validar existencia de alias del comisionado
-            var aliasExists = await context.Teams.AnyAsync(t => t.Alias == dto.CommissionerAlias);
-            if (aliasExists)
+            if (await leagueRepository.AliasExistsAsync(dto.CommissionerAlias)){
                 return (false, "El alias del equipo ya existe en el sistema. Intente con un nombre de equipo diferente.");
+            }
 
             return (true, null);
         }

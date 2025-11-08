@@ -107,7 +107,7 @@ namespace NFLFantasy.Api.Services
         {
 
             // Validaciones centralizadas en LeagueValidator
-            var (isValid, error) = await NFLFantasy.Api.Validators.LeagueValidator.ValidateCreateLeagueAsync(dto, _context);
+            var (isValid, error) = await NFLFantasy.Api.Validators.LeagueValidator.ValidateCreateLeagueAsync(dto, _context, _leagueRepository);
             if (!isValid)
                 return (false, error, null, null);
 

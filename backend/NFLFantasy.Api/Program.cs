@@ -55,6 +55,7 @@ builder.Services.AddScoped<LeagueService>();
 builder.Services.AddScoped<NFLFantasy.Api.Services.NflPlayerService>();
 builder.Services.AddScoped<NFLFantasy.Api.Repositories.NflPlayerRepository>();
 builder.Services.AddScoped<NFLFantasy.Api.Validators.NflPlayerValidator>();
+builder.Services.AddScoped<NFLFantasy.Api.Repositories.PositionRepository>();
 
 // Añade controladores MVC
 builder.Services.AddControllers();

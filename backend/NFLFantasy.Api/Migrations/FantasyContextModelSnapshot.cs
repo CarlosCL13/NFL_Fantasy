@@ -165,6 +165,50 @@ namespace NFLFantasy.Api.Migrations
                     b.ToTable("LeagueAudits");
                 });
 
+            modelBuilder.Entity("NFLFantasy.Api.Models.NflPlayer", b =>
+                {
+                    b.Property<int>("NflPlayerId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("NflPlayerId"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ImageUrl")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("NflTeamId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PositionId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ThumbnailUrl")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("NflPlayerId");
+
+                    b.HasIndex("NflTeamId");
+
+                    b.HasIndex("PositionId");
+
+                    b.ToTable("NflPlayers");
+                });
+
             modelBuilder.Entity("NFLFantasy.Api.Models.NflTeam", b =>
                 {
                     b.Property<int>("NflTeamId")
@@ -495,6 +539,25 @@ namespace NFLFantasy.Api.Migrations
                     b.Navigation("Commissioner");
 
                     b.Navigation("Season");
+                });
+
+            modelBuilder.Entity("NFLFantasy.Api.Models.NflPlayer", b =>
+                {
+                    b.HasOne("NFLFantasy.Api.Models.NflTeam", "NflTeam")
+                        .WithMany()
+                        .HasForeignKey("NflTeamId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("NFLFantasy.Api.Models.Position", "Position")
+                        .WithMany()
+                        .HasForeignKey("PositionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("NflTeam");
+
+                    b.Navigation("Position");
                 });
 
             modelBuilder.Entity("NFLFantasy.Api.Models.Team", b =>

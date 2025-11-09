@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using NFLFantasy.Api.Data;
 using NFLFantasy.Api.DTO;
 using NFLFantasy.Api.Models;
+using NFLFantasy.Api.Repositories;
 
 namespace NFLFantasy.Api.Services
 {
@@ -21,12 +22,15 @@ namespace NFLFantasy.Api.Services
         /// </summary>
         private readonly FantasyContext _context;
 
+        private readonly NFLFantasy.Api.Repositories.SeasonRepository _repository;
+
         /// <summary>
         /// Constructor del servicio SeasonService.
         /// </summary>
         public SeasonService(FantasyContext context)
         {
             _context = context;
+            _repository = new NFLFantasy.Api.Repositories.SeasonRepository(context);
         }
 
         /// <summary>
@@ -34,56 +38,25 @@ namespace NFLFantasy.Api.Services
         /// </summary>
         public async Task<(bool Success, string? Error, Season? Season)> CreateSeasonAsync(CreateSeasonDto dto)
         {
-            // Valida que la fecha de fin sea posterior a la de inicio
-            if (dto.EndDate <= dto.StartDate)
-                return (false, "La fecha de fin debe ser posterior a la de inicio.", null);
-
-            // Valida que las fechas no estén en el pasado
-            if (dto.StartDate < DateTime.Today || dto.EndDate < DateTime.Today)
-                return (false, "Las fechas no pueden estar en el pasado.", null);
-
-            // Validar nombre único
-            if (await _context.Seasons.AnyAsync(s => s.Name == dto.Name))
-                return (false, "Ya existe una temporada con ese nombre.", null);
-
-            // Validar traslapes con otras temporadas
-            if (await _context.Seasons.AnyAsync(s =>
-                (dto.StartDate <= s.EndDate && dto.EndDate >= s.StartDate)))
-                return (false, "Las fechas se traslapan con otra temporada existente.", null);
-
-            // Validar única temporada actual
-            if (dto.IsCurrent && await _context.Seasons.AnyAsync(s => s.IsCurrent))
-                return (false, "Ya existe una temporada con estado actual.", null);
+            // Validar datos de la temporada
+            var (isValid, errorMessage) = await NFLFantasy.Api.Validators.SeasonValidator.ValidateCreateSeasonAsync(dto, _context, _repository);
+            if (!isValid){
+                return (false, errorMessage, null);
+            }
+            
+            // Si se marca como actual, desactivar la temporada actual existente
+            if (dto.IsCurrent)
+            {
+                await DeactivateCurrentSeasonAsync();
+            }
 
             // Generar semanas
-            var totalDays = (dto.EndDate - dto.StartDate).TotalDays + 1; // incluir el día final
-            var daysPerWeek = Math.Floor(totalDays / dto.WeeksCount); // distribución base
-            var extraDays = (int)(totalDays % dto.WeeksCount); // días adicionales a distribuir
-            var weeks = new List<Week>(); // lista de semanas generadas
-            var weekStart = dto.StartDate; // fecha de inicio de la primera semana
+            var weeks = GenerateWeeks(dto);
 
-            // Crear cada semana
-            for (int i = 1; i <= dto.WeeksCount; i++)
-            {
-                var weekLength = (int)daysPerWeek + (i <= extraDays ? 1 : 0);
-                var weekEnd = weekStart.AddDays(weekLength - 1);
-                if (weekEnd > dto.EndDate) weekEnd = dto.EndDate;
-                weeks.Add(new Week
-                {
-                    Number = i,
-                    StartDate = weekStart,
-                    EndDate = weekEnd
-                });
-                weekStart = weekEnd.AddDays(1);
-            }
-
-
-            // Validar traslapes entre semanas
-            for (int i = 1; i < weeks.Count; i++)
-            {
-                if (weeks[i].StartDate <= weeks[i - 1].EndDate)
-                    return (false, $"Las semanas {weeks[i - 1].Number} y {weeks[i].Number} se traslapan.", null);
-            }
+            // Validar que no haya traslapes entre semanas
+            var overlapError = ValidateWeeksNoOverlap(weeks);
+            if (overlapError != null)
+                return (false, overlapError, null);
 
             // Crear y guardar la temporada
             var season = new Season
@@ -98,8 +71,9 @@ namespace NFLFantasy.Api.Services
             };
 
             // Guardar en la base de datos
-            _context.Seasons.Add(season);
-            await _context.SaveChangesAsync();
+            await _repository.AddSeasonAsync(season);
+
+            // Devolver resultado exitoso
             return (true, null, season);
         }
 
@@ -118,7 +92,8 @@ namespace NFLFantasy.Api.Services
         /// Verifica si un nombre de temporada está disponible.
         /// </summary>
         public async Task<bool> IsSeasonNameAvailableAsync(string name)
-        {
+        {   
+            // Verificar disponibilidad del nombre
             return !await _context.Seasons.AnyAsync(s => s.Name.ToLower() == name.ToLower());
         }
 
@@ -137,11 +112,13 @@ namespace NFLFantasy.Api.Services
         /// </summary>
         public async Task<object> GetConflictInfoAsync(CreateSeasonDto dto)
         {
+            // Verificar conflictos potenciales
             var nameExists = await _context.Seasons.AnyAsync(s => s.Name.ToLower() == dto.Name.ToLower());
             var currentSeasonExists = await _context.Seasons.AnyAsync(s => s.IsCurrent);
             var dateOverlap = await _context.Seasons.AnyAsync(s =>
                 (dto.StartDate <= s.EndDate && dto.EndDate >= s.StartDate));
 
+            // Devolver resumen de conflictos
             return new
             {
                 nameConflict = nameExists,
@@ -149,6 +126,59 @@ namespace NFLFantasy.Api.Services
                 dateConflict = dateOverlap,
                 canCreate = !nameExists && !(dto.IsCurrent && currentSeasonExists) && !dateOverlap
             };
+        }
+
+        /// <summary>
+        /// Desactiva la temporada actualmente marcada como actual.
+        /// </summary>
+        private async Task DeactivateCurrentSeasonAsync()
+        {
+            var temporadaActual = await _context.Seasons.FirstOrDefaultAsync(s => s.IsCurrent);
+            if (temporadaActual != null)
+            {
+                temporadaActual.IsCurrent = false;
+                _context.Seasons.Update(temporadaActual);
+            }
+        }
+
+        /// <summary>
+        /// Método para generar las semanas de la temporada.
+        /// </summary>
+        private List<Week> GenerateWeeks(CreateSeasonDto dto)
+        {
+            var totalDays = (dto.EndDate - dto.StartDate).TotalDays + 1;
+            var daysPerWeek = Math.Floor(totalDays / dto.WeeksCount);
+            var extraDays = (int)(totalDays % dto.WeeksCount);
+            var weeks = new List<Week>();
+            var weekStart = dto.StartDate;
+
+            for (int i = 1; i <= dto.WeeksCount; i++)
+            {
+                var weekLength = (int)daysPerWeek + (i <= extraDays ? 1 : 0);
+                var weekEnd = weekStart.AddDays(weekLength - 1);
+                if (weekEnd > dto.EndDate) weekEnd = dto.EndDate;
+                weeks.Add(new Week
+                {
+                    Number = i,
+                    StartDate = weekStart,
+                    EndDate = weekEnd
+                });
+                weekStart = weekEnd.AddDays(1);
+            }
+            return weeks;
+        }
+
+        /// <summary>
+        /// Método para validar que no haya traslapes entre semanas.
+        /// </summary>
+        private string? ValidateWeeksNoOverlap(List<Week> weeks)
+        {
+            for (int i = 1; i < weeks.Count; i++)
+            {
+                if (weeks[i].StartDate <= weeks[i - 1].EndDate)
+                    return $"Las semanas {weeks[i - 1].Number} y {weeks[i].Number} se traslapan.";
+            }
+            return null;
         }
     }
 }

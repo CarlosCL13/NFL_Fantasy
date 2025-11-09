@@ -2,7 +2,7 @@ using NFLFantasy.Api.Data;
 using NFLFantasy.Api.DTO;
 using NFLFantasy.Api.Models;
 using Microsoft.EntityFrameworkCore;
-using BCrypt.Net;
+using NFLFantasy.Api.Utils;
 using NFLFantasy.Api;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -23,6 +23,8 @@ namespace NFLFantasy.Api.Services
         //Referencia a la configuración de la aplicación
         private readonly IConfiguration _configuration;
 
+        private readonly NFLFantasy.Api.Repositories.UserRepository _repository;
+
         /// <summary>
         /// Constructor del servicio UserService.
         /// </summary>
@@ -30,6 +32,7 @@ namespace NFLFantasy.Api.Services
         {
             _context = context; //Inicializa el contexto de la base de datos
             _configuration = configuration; //Inicializa la configuración de la aplicación
+            _repository = new NFLFantasy.Api.Repositories.UserRepository(context);
         }
 
         /// <summary>
@@ -41,38 +44,42 @@ namespace NFLFantasy.Api.Services
         /// <remarks>
         /// Este método registra un nuevo usuario en el sistema.
         /// </remarks>
-        public async Task<(bool Success, string? Error, User? User)> RegisterAsync(RegisterUserDto dto, string? profileImageFileName = null)
+        public async Task<(bool Success, string? Error, User? User)> RegisterAsync(RegisterUserDto dto)
         {
-            // Validación de email único
-            if (await _context.Users.AnyAsync(u => u.Email == dto.Email))
-                return (false, AppConstants.ErrorEmailAlreadyRegistered, null);
+            // Validar datos del usuario
+            var (isValid, errorMessage) = await NFLFantasy.Api.Validators.UserValidator.ValidateCreateUserAsync(dto, _repository);
+            if (!isValid)
+            {
+                return (false, errorMessage, null);
+            }
 
-            // Validación de alias único
-            if (await _context.Users.AnyAsync(u => u.Alias == dto.Alias))
-                return (false, AppConstants.ErrorAliasInUse, null);
-
-            // Validación de campos obligatorios
-            if (string.IsNullOrWhiteSpace(dto.Name) || string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Alias) || string.IsNullOrWhiteSpace(dto.Password))
-                return (false, AppConstants.ErrorMissingUserFields, null);
+            // Guardar imagen de perfil si se proporcionó
+            var profileImageFileName = await SaveProfileImageAsync(dto.ProfileImage);
 
             // Hash de la contraseña
-            var passwordHash = HashPassword(dto.Password);
+            var passwordHash = PasswordHelper.HashPassword(dto.Password);
 
-            // Crear usuario 
+            // Buscar el rol 'manager' en la base de datos usando el repository
+            var managerRole = await _repository.GetManagerRoleAsync();
+            if (managerRole == null)
+                return (false, "No se encontró el rol 'manager' en la base de datos. Contacta al administrador.", null);
+
+            // Crear usuario con rol 'manager'
             var user = new User
             {
                 Name = dto.Name,
                 Email = dto.Email,
                 Alias = dto.Alias,
                 PasswordHash = passwordHash,
-                ProfileImage = profileImageFileName ?? AppConstants.DefaultProfileImage
-                // CreatedAt, Role, Status, Language usan valores por defecto
+                ProfileImage = profileImageFileName ?? AppConstants.DefaultProfileImage,
+                RoleId = managerRole.RoleId
+                // CreatedAt, Status, Language usan valores por defecto
             };
 
             // Guardar en la base de datos
-            _context.Users.Add(user);           //Agrega el nuevo usuario al contexto
-            await _context.SaveChangesAsync();  //Guarda los cambios en la base de datos
-            return (true, null, user);          //Devuelve éxito y el usuario creado
+            await _repository.AddUserAsync(user);
+
+            return (true, null, user);
         }
 
         /// <summary>
@@ -87,7 +94,7 @@ namespace NFLFantasy.Api.Services
         public async Task<(bool Success, string? Error, User? User, string? Token)> LoginAsync(string email, string password)
         {
             // Buscar usuario por email
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+            var user = await _repository.GetUserByEmailAsync(email);
 
             // Validar usuario encontrado
             if (user == null)
@@ -102,7 +109,7 @@ namespace NFLFantasy.Api.Services
             user.LastFailedLogin = user.LastFailedLogin;
 
             // Verificar contraseña
-            if (!BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
+            if (!PasswordHelper.VerifyPassword(password, user.PasswordHash))
             {
                 user.FailedLoginAttempts++;                 // Incrementar intentos fallidos
                 user.LastFailedLogin = DateTime.UtcNow;     // Actualizar fecha del último intento fallido
@@ -114,13 +121,13 @@ namespace NFLFantasy.Api.Services
                 }
 
                 // Guardar cambios
-                await _context.SaveChangesAsync();
+                await _repository.UpdateUserAsync(user);
                 return (false, AppConstants.ErrorInvalidCredentials, null, null);
             }
 
             // Login exitoso
             user.FailedLoginAttempts = 0;
-            await _context.SaveChangesAsync();
+            await _repository.UpdateUserAsync(user);
 
             // Generar token JWT
             var token = GenerateJwtToken(user);
@@ -148,7 +155,8 @@ namespace NFLFantasy.Api.Services
             {
                 new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
                 new Claim(ClaimTypes.Name, user.Name),
-                new Claim(ClaimTypes.Email, user.Email)
+                new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.Role, user.Role?.Name ?? "")
             };
 
             // Crear el token JWT
@@ -166,12 +174,26 @@ namespace NFLFantasy.Api.Services
         }
 
         /// <summary>
-        /// Genera un hash seguro de la contraseña usando BCrypt.
-        /// </summary>S
-        private string HashPassword(string password)
+        /// Guarda la imagen de perfil del usuario en el servidor.
+        /// </summary>
+        private async Task<string?> SaveProfileImageAsync(IFormFile? image)
         {
-            // BCrypt hash seguro
-            return BCrypt.Net.BCrypt.HashPassword(password);
+            if (image == null || image.Length == 0){
+                return null;
+            }
+
+            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), AppConstants.UsersImageFolder.Replace("/", Path.DirectorySeparatorChar.ToString()));
+            Directory.CreateDirectory(uploadsFolder);
+
+            var uniqueFileName = $"{Guid.NewGuid()}_{image.FileName}";
+            var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await image.CopyToAsync(stream);
+            }
+
+            return uniqueFileName;
         }
 
         

@@ -42,10 +42,16 @@ namespace NFLFantasy.Api.Models
         /// </summary>
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+
         /// <summary>
-        /// Rol del usuario.
+        /// Clave foránea al rol del usuario.
         /// </summary>
-        public string Role { get; set; } = "manager";
+        public int RoleId { get; set; }
+
+        /// <summary>
+        /// Rol del usuario (navegación).
+        /// </summary>
+        public Role? Role { get; set; }
 
         /// <summary>
         /// Estado del usuario (activo, inactivo, suspendido).

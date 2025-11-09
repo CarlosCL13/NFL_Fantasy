@@ -1,4 +1,12 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using NFLFantasy.Api.DTO;
+using NFLFantasy.Api.Services;
+using System.Collections.Generic;
+using System.IO;
+using System.Text.Json;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NFLFantasy.Api.DTO;
 using NFLFantasy.Api.Services;
@@ -10,9 +18,47 @@ namespace NFLFantasy.Api.Controllers
     public class NflPlayerController : ControllerBase
     {
         private readonly NflPlayerService _nflPlayerService;
-        public NflPlayerController(NflPlayerService nflPlayerService)
+        private readonly NflPlayerBulkService _nflPlayerBulkService;
+        public NflPlayerController(NflPlayerService nflPlayerService, NflPlayerBulkService nflPlayerBulkService)
         {
             _nflPlayerService = nflPlayerService;
+            _nflPlayerBulkService = nflPlayerBulkService;
+        }
+
+        /// <summary>
+        /// Carga masiva de jugadores NFL desde un archivo JSON.
+        /// </summary>
+        [HttpPost("bulk-upload")]
+        [Authorize(Roles = "admin")]
+        public async Task<IActionResult> BulkUpload([FromForm] NFLFantasy.Api.DTO.BulkUploadRequest request)
+        {
+            var file = request.File;
+            if (file == null || file.Length == 0)
+                return BadRequest("Debe adjuntar un archivo JSON.");
+
+            List<NFLFantasy.Api.DTO.NflPlayerBulkDto>? players;
+            using (var stream = new StreamReader(file.OpenReadStream()))
+            {
+                var json = await stream.ReadToEndAsync();
+                try
+                {
+                    players = System.Text.Json.JsonSerializer.Deserialize<List<NFLFantasy.Api.DTO.NflPlayerBulkDto>>(json);
+                }
+                catch
+                {
+                    return BadRequest("El archivo no tiene formato JSON válido.");
+                }
+            }
+            if (players == null || players.Count == 0)
+                return BadRequest("El archivo no contiene datos de jugadores.");
+
+            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "nflplayers");
+            var processedFolder = Path.Combine(Directory.GetCurrentDirectory(), "processed_files");
+            var originalFilePath = file.FileName;
+            var result = await _nflPlayerBulkService.ProcessBulkAsync(players, uploadsFolder, originalFilePath, processedFolder);
+            if (!result.Success)
+                return BadRequest(new { errors = result.Errors });
+            return Ok(new { message = $"{result.CreatedCount} jugadores creados exitosamente.", detalles = result.SuccessMessages });
         }
 
         /// <summary>

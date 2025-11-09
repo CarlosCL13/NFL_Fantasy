@@ -30,10 +30,13 @@ namespace NFLFantasy.Api.Data
         public DbSet<DefaultPosition> DefaultPositions { get; set; }
         public DbSet<DefaultScoring> DefaultScorings { get; set; }
 
+        public DbSet<NflPlayer> NflPlayers { get; set; }
+
         /// <summary>
         /// Configuraciones adicionales del modelo.
         /// </summary>
         protected override void OnModelCreating(ModelBuilder modelBuilder)
+
         {
             // Índice único en el correo electrónico del usuario
             modelBuilder.Entity<User>()
@@ -100,6 +103,13 @@ namespace NFLFantasy.Api.Data
                 .WithMany()
                 .HasForeignKey(ds => ds.ScoringId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+             // Relación NflTeam-NflPlayer: un equipo tiene muchos jugadores, un jugador pertenece a un equipo
+            modelBuilder.Entity<NflPlayer>()
+                .HasOne(p => p.NflTeam)
+                .WithMany()
+                .HasForeignKey(p => p.NflTeamId)
+                .OnDelete(DeleteBehavior.Restrict);    
         }
     }
 }

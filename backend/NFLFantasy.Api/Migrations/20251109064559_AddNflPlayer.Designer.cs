@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NFLFantasy.Api.Data;
 
@@ -11,9 +12,11 @@ using NFLFantasy.Api.Data;
 namespace NFLFantasy.Api.Migrations
 {
     [DbContext(typeof(FantasyContext))]
-    partial class FantasyContextModelSnapshot : ModelSnapshot
+    [Migration("20251109064559_AddNflPlayer")]
+    partial class AddNflPlayer
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -192,8 +195,10 @@ namespace NFLFantasy.Api.Migrations
                     b.Property<int>("NflTeamId")
                         .HasColumnType("int");
 
-                    b.Property<int>("PositionId")
-                        .HasColumnType("int");
+                    b.Property<string>("Position")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.Property<string>("ThumbnailUrl")
                         .IsRequired()
@@ -203,8 +208,6 @@ namespace NFLFantasy.Api.Migrations
                     b.HasKey("NflPlayerId");
 
                     b.HasIndex("NflTeamId");
-
-                    b.HasIndex("PositionId");
 
                     b.ToTable("NflPlayers");
                 });
@@ -549,15 +552,7 @@ namespace NFLFantasy.Api.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("NFLFantasy.Api.Models.Position", "Position")
-                        .WithMany()
-                        .HasForeignKey("PositionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.Navigation("NflTeam");
-
-                    b.Navigation("Position");
                 });
 
             modelBuilder.Entity("NFLFantasy.Api.Models.Team", b =>

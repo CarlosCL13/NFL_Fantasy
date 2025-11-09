@@ -29,9 +29,43 @@ namespace NFLFantasy.Api.Validators
             if (string.IsNullOrWhiteSpace(dto.Name) || string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Alias) || string.IsNullOrWhiteSpace(dto.Password))
             {
                 return (false, AppConstants.ErrorMissingUserFields);
+            } 
+
+            // Validar formato de la imagen de perfil
+            var (isImageValid, imageError) = ValidateProfileImage(dto.ProfileImage);
+            if (!isImageValid)
+            {
+                return (false, imageError);
             }
 
             return (true, null);
         }
+
+        /// <summary>
+        /// Valida la imagen de perfil del usuario.
+        /// </summary>
+        public static (bool IsValid, string? ErrorMessage) ValidateProfileImage(IFormFile? image)
+        {
+            if (image == null || image.Length == 0)
+            {
+                return (true, null); // No hay imagen, es válido
+            }
+
+            // Validar extensión de la imagen
+            var extension = Path.GetExtension(image.FileName).ToLowerInvariant();
+            if (!AppConstants.AllowedImageExtensions.Contains(extension))
+            {
+                return (false, AppConstants.ErrorProfileImageFormat);
+            }
+
+            // Validar tamaño de la imagen
+            if (image.Length > AppConstants.MaxImageFileSize)
+            {
+                return (false, AppConstants.ErrorProfileImageTooLarge);
+            }
+
+            return (true, null);
+        }
+
     }
 }

@@ -44,7 +44,7 @@ namespace NFLFantasy.Api.Services
         /// <remarks>
         /// Este método registra un nuevo usuario en el sistema.
         /// </remarks>
-        public async Task<(bool Success, string? Error, User? User)> RegisterAsync(RegisterUserDto dto, string? profileImageFileName = null)
+        public async Task<(bool Success, string? Error, User? User)> RegisterAsync(RegisterUserDto dto)
         {
             // Validar datos del usuario
             var (isValid, errorMessage) = await NFLFantasy.Api.Validators.UserValidator.ValidateCreateUserAsync(dto, _repository);
@@ -52,6 +52,9 @@ namespace NFLFantasy.Api.Services
             {
                 return (false, errorMessage, null);
             }
+
+            // Guardar imagen de perfil si se proporcionó
+            var profileImageFileName = await SaveProfileImageAsync(dto.ProfileImage);
 
             // Hash de la contraseña
             var passwordHash = PasswordHelper.HashPassword(dto.Password);
@@ -168,6 +171,29 @@ namespace NFLFantasy.Api.Services
             var tokenHandler = new JwtSecurityTokenHandler();
             var token = tokenHandler.CreateToken(tokenDescriptor);
             return tokenHandler.WriteToken(token);
+        }
+
+        /// <summary>
+        /// Guarda la imagen de perfil del usuario en el servidor.
+        /// </summary>
+        private async Task<string?> SaveProfileImageAsync(IFormFile? image)
+        {
+            if (image == null || image.Length == 0){
+                return null;
+            }
+
+            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), AppConstants.UsersImageFolder.Replace("/", Path.DirectorySeparatorChar.ToString()));
+            Directory.CreateDirectory(uploadsFolder);
+
+            var uniqueFileName = $"{Guid.NewGuid()}_{image.FileName}";
+            var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await image.CopyToAsync(stream);
+            }
+
+            return uniqueFileName;
         }
 
         

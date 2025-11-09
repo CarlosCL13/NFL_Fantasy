@@ -29,7 +29,7 @@ namespace NFLFantasy.Api.Controllers
         /// <summary>
         /// Crea una nueva temporada y sus semanas (solo administrador).
         /// </summary>
-        [Authorize]
+        [Authorize(Roles = "admin")]
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateSeasonDto dto)
         {

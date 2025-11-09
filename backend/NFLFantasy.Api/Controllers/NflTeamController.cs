@@ -30,79 +30,19 @@ namespace NFLFantasy.Api.Controllers
             // Validación del modelo
             if (!ModelState.IsValid)
             {
-                // Extrae los errores de validación del modelo
                 var errors = ModelState.Values
                     .SelectMany(v => v.Errors)
                     .Select(e => e.ErrorMessage)
                     .ToList();
-
-                // Devuelve un BadRequest con los errores detallados
                 return BadRequest(new { error = AppConstants.ErrorInvalidTeamData, detalles = errors });
             }
 
-            // Archivo de imagen subido
-            var file = dto.Image;
+            // Llama al servicio, que se encarga de validación y guardado
+            var (success, error, team) = await _nflTeamService.CreateNflTeamAsync(dto);
 
-            // Validar que se haya subido un archivo
-            if (file == null || file.Length == 0)
-                return BadRequest(new { error = AppConstants.ErrorRequiredImage });
-
-            // Validar y guardar la imagen
-            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
-            if (!AppConstants.AllowedImageExtensions.Contains(extension))
-                return BadRequest(new { error = AppConstants.ErrorInvalidImageFormat });
-
-            // Validar tamaño del archivo
-            if (file.Length > AppConstants.MaxImageFileSize)
-                return BadRequest(new { error = AppConstants.ErrorImageTooLarge });
-
-            // Asegurarse de que la carpeta de carga exista
-            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), AppConstants.NflTeamsImageFolder.Replace("/", Path.DirectorySeparatorChar.ToString()));
-
-            // Crea el directorio si no existe
-            Directory.CreateDirectory(uploadsFolder);
-
-            // Generar un nombre de archivo único
-            var uniqueFileName = $"{Guid.NewGuid()}_{file.FileName}";
-
-            // Ruta completa del archivo
-            var filePath = Path.Combine(uploadsFolder, uniqueFileName);
-
-            // Guardar como PNG
-            var thumbnailFileName = $"thumb_{Guid.NewGuid()}.png";
-
-            // Ruta completa del thumbnail
-            var thumbnailPath = Path.Combine(uploadsFolder, thumbnailFileName);
-
-            // Actualizar DTO para pasar la ruta de la imagen y thumbnail al service
-            var (success, error, team) = await _nflTeamService.CreateNflTeamAsync(
-                dto.Name,
-                dto.City,
-                uniqueFileName,
-                thumbnailFileName
-            );
-
-            // Verificar si hubo un error al crear el equipo NFL
-            if (!success){
-
+            if (!success)
                 return BadRequest(new { error = error ?? "No se pudo crear el equipo NFL. Por favor, verifica los datos e inténtalo de nuevo." });
 
-            }
-
-            // Guardar el archivo en el servidor
-            using (var stream = new FileStream(filePath, FileMode.Create))
-            {
-                await file.CopyToAsync(stream);
-            }
-            
-            // Generar thumbnail usando ImageSharp
-            using (var image = Image.Load(filePath))
-            {
-                image.Mutate(x => x.Resize(100, 100)); // tamaño del thumbnail
-                image.Save(thumbnailPath);
-            }
-
-            // Devuelve respuesta exitosa
             return Ok(new { message = "Equipo NFL creado exitosamente.", teamId = team!.NflTeamId });
         }
 
@@ -127,9 +67,45 @@ namespace NFLFantasy.Api.Controllers
                 t.CreatedAt,
                 t.IsActive
             });
-            
+
             // Devuelve la lista de equipos NFL
             return Ok(result);
+        }
+        
+        /// <summary>
+        /// Guarda la imagen y el thumbnail en el servidor.
+        /// </summary>
+        private async Task<(string? imageFileName, string? thumbnailFileName, string? error)> SaveImageAndThumbnailAsync(IFormFile image)
+        {
+            try
+            {
+                var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), AppConstants.NflTeamsImageFolder.Replace("/", Path.DirectorySeparatorChar.ToString()));
+                Directory.CreateDirectory(uploadsFolder);
+
+                var imageFileName = $"{Guid.NewGuid()}_{image.FileName}";
+                var imagePath = Path.Combine(uploadsFolder, imageFileName);
+
+                using (var stream = new FileStream(imagePath, FileMode.Create))
+                {
+                    await image.CopyToAsync(stream);
+                }
+
+                // Generar thumbnail
+                var thumbnailFileName = $"thumb_{Guid.NewGuid()}.png";
+                var thumbnailPath = Path.Combine(uploadsFolder, thumbnailFileName);
+
+                using (var img = Image.Load(imagePath))
+                {
+                    img.Mutate(x => x.Resize(100, 100));
+                    img.Save(thumbnailPath);
+                }
+
+                return (imageFileName, thumbnailFileName, null);
+            }
+            catch (Exception)
+            {
+                return (null, null, "Error al guardar la imagen o el thumbnail.");
+            }
         }
     }
 }

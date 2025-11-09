@@ -52,10 +52,29 @@ namespace NFLFantasy.Api.Controllers
         /// Obtiene todas las temporadas existentes.
         /// </summary>
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<ActionResult<IEnumerable<SearchSeasonDto>>> GetAll()
         {
             var seasons = await _seasonService.GetAllSeasonsAsync();
-            return Ok(seasons);
+
+            var result = seasons.Select(s => new SearchSeasonDto
+            {
+                SeasonId = s.SeasonId,
+                Name = s.Name,
+                WeeksCount = s.WeeksCount,
+                StartDate = s.StartDate,
+                EndDate = s.EndDate,
+                IsCurrent = s.IsCurrent,
+                CreatedAt = s.CreatedAt,
+                Weeks = s.Weeks.Select(w => new WeekDto
+                {
+                    WeekId = w.WeekId,
+                    Number = w.Number,
+                    StartDate = w.StartDate,
+                    EndDate = w.EndDate
+                }).ToList()
+            });
+
+            return Ok(result);
         }
 
         /// <summary>

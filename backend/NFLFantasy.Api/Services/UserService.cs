@@ -23,6 +23,8 @@ namespace NFLFantasy.Api.Services
         //Referencia a la configuración de la aplicación
         private readonly IConfiguration _configuration;
 
+        private readonly NFLFantasy.Api.Repositories.UserRepository _repository;
+
         /// <summary>
         /// Constructor del servicio UserService.
         /// </summary>
@@ -30,6 +32,7 @@ namespace NFLFantasy.Api.Services
         {
             _context = context; //Inicializa el contexto de la base de datos
             _configuration = configuration; //Inicializa la configuración de la aplicación
+            _repository = new NFLFantasy.Api.Repositories.UserRepository(context);
         }
 
         /// <summary>
@@ -43,23 +46,18 @@ namespace NFLFantasy.Api.Services
         /// </remarks>
         public async Task<(bool Success, string? Error, User? User)> RegisterAsync(RegisterUserDto dto, string? profileImageFileName = null)
         {
-            // Validación de email único
-            if (await _context.Users.AnyAsync(u => u.Email == dto.Email))
-                return (false, AppConstants.ErrorEmailAlreadyRegistered, null);
-
-            // Validación de alias único
-            if (await _context.Users.AnyAsync(u => u.Alias == dto.Alias))
-                return (false, AppConstants.ErrorAliasInUse, null);
-
-            // Validación de campos obligatorios
-            if (string.IsNullOrWhiteSpace(dto.Name) || string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Alias) || string.IsNullOrWhiteSpace(dto.Password))
-                return (false, AppConstants.ErrorMissingUserFields, null);
+            // Validar datos del usuario
+            var (isValid, errorMessage) = await NFLFantasy.Api.Validators.UserValidator.ValidateCreateUserAsync(dto, _repository);
+            if (!isValid)
+            {
+                return (false, errorMessage, null);
+            }
 
             // Hash de la contraseña
             var passwordHash = PasswordHelper.HashPassword(dto.Password);
 
-            // Buscar el rol 'manager' en la base de datos
-            var managerRole = await _context.Roles.FirstOrDefaultAsync(r => r.Name == "manager");
+            // Buscar el rol 'manager' en la base de datos usando el repository
+            var managerRole = await _repository.GetManagerRoleAsync();
             if (managerRole == null)
                 return (false, "No se encontró el rol 'manager' en la base de datos. Contacta al administrador.", null);
 
@@ -76,9 +74,9 @@ namespace NFLFantasy.Api.Services
             };
 
             // Guardar en la base de datos
-            _context.Users.Add(user);           //Agrega el nuevo usuario al contexto
-            await _context.SaveChangesAsync();  //Guarda los cambios en la base de datos
-            return (true, null, user);          //Devuelve éxito y el usuario creado
+            await _repository.AddUserAsync(user);
+
+            return (true, null, user);
         }
 
         /// <summary>
@@ -93,9 +91,7 @@ namespace NFLFantasy.Api.Services
         public async Task<(bool Success, string? Error, User? User, string? Token)> LoginAsync(string email, string password)
         {
             // Buscar usuario por email
-            var user = await _context.Users
-                .Include(u => u.Role)
-                .FirstOrDefaultAsync(u => u.Email == email);
+            var user = await _repository.GetUserByEmailAsync(email);
 
             // Validar usuario encontrado
             if (user == null)
@@ -122,13 +118,13 @@ namespace NFLFantasy.Api.Services
                 }
 
                 // Guardar cambios
-                await _context.SaveChangesAsync();
+                await _repository.UpdateUserAsync(user);
                 return (false, AppConstants.ErrorInvalidCredentials, null, null);
             }
 
             // Login exitoso
             user.FailedLoginAttempts = 0;
-            await _context.SaveChangesAsync();
+            await _repository.UpdateUserAsync(user);
 
             // Generar token JWT
             var token = GenerateJwtToken(user);
@@ -172,8 +168,6 @@ namespace NFLFantasy.Api.Services
             var token = tokenHandler.CreateToken(tokenDescriptor);
             return tokenHandler.WriteToken(token);
         }
-
-        // Hashing de contraseña centralizado en PasswordHelper
 
         
     }

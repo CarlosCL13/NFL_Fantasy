@@ -3,6 +3,8 @@ using NFLFantasy.Api.Models;
 using NFLFantasy.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using NFLFantasy.Api;
+using NFLFantasy.Api.Repositories;
+using NFLFantasy.Api.Validators;
 
 namespace NFLFantasy.Api.Services
 {
@@ -13,6 +15,9 @@ namespace NFLFantasy.Api.Services
     {
         //Referencia al contexto de la base de datos
         private readonly FantasyContext _context;
+
+        //Referencia al repositorio de equipos NFL
+        private readonly NFLFantasy.Api.Repositories.NflTeamRepository _repository;
         
         /// <summary>
         /// Constructor del servicio NflTeamService.
@@ -20,6 +25,7 @@ namespace NFLFantasy.Api.Services
         public NflTeamService(FantasyContext context)
         {
             _context = context;
+            _repository = new NFLFantasy.Api.Repositories.NflTeamRepository(context);
         }
 
         /// <summary>
@@ -29,14 +35,12 @@ namespace NFLFantasy.Api.Services
         /// <returns>Tupla con éxito, mensaje de error y el equipo creado.</returns>
         public async Task<(bool Success, string? Error, NflTeam? Team)> CreateNflTeamAsync(string name, string city, string imageFileName, string thumbnailFileName)
         {
-
-            // Validar nombre único
-            if (await _context.NflTeams.AnyAsync(t => t.Name == name))
-                return (false, AppConstants.ErrorNflTeamNameExists, null);
-
-            // Validar campos obligatorios
-            if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(city) || string.IsNullOrWhiteSpace(imageFileName) || string.IsNullOrWhiteSpace(thumbnailFileName))
-                return (false, AppConstants.ErrorMissingNflTeamFields, null);
+            // Validaciones centralizadas en NflTeamValidator
+            var (isValid, error) = await NflTeamValidator.ValidateCreateNflTeamAsync(name, city, imageFileName, thumbnailFileName, _repository);
+            if (!isValid)
+            {
+                return (false, error, null);
+            }
 
             // Crear el equipo NFL
             var team = new NflTeam
@@ -50,8 +54,8 @@ namespace NFLFantasy.Api.Services
             };
 
             // Guardar en la base de datos
-            _context.NflTeams.Add(team);
-            await _context.SaveChangesAsync();
+            await _repository.AddNflTeamAsync(team);
+
             return (true, null, team);
         }
 

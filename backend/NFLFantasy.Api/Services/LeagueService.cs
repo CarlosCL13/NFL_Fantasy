@@ -18,6 +18,8 @@ namespace NFLFantasy.Api.Services
     {
         // Referencia al contexto de la base de datos
         private readonly FantasyContext _context;
+
+        // Referencia al repositorio de ligas
         private readonly NFLFantasy.Api.Repositories.LeagueRepository _leagueRepository;
 
         /// <summary>

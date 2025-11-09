@@ -6,10 +6,6 @@ using NFLFantasy.Api.Services;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using NFLFantasy.Api.DTO;
-using NFLFantasy.Api.Services;
 
 namespace NFLFantasy.Api.Controllers
 {
@@ -53,9 +49,18 @@ namespace NFLFantasy.Api.Controllers
                 return BadRequest("El archivo no contiene datos de jugadores.");
 
             var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "nflplayers");
-            var processedFolder = Path.Combine(Directory.GetCurrentDirectory(), "processed_files");
-            var originalFilePath = file.FileName;
-            var result = await _nflPlayerBulkService.ProcessBulkAsync(players, uploadsFolder, originalFilePath, processedFolder);
+            var jsonUploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "json_uploads");
+            var jsonProcessedFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "json_processed");
+            Directory.CreateDirectory(jsonUploadsFolder);
+            Directory.CreateDirectory(jsonProcessedFolder);
+            // Guardar el archivo JSON subido en wwwroot/json_uploads
+            var uniqueFileName = $"{Path.GetFileNameWithoutExtension(file.FileName)}_{DateTime.UtcNow:yyyyMMddHHmmss}.json";
+            var jsonUploadPath = Path.Combine(jsonUploadsFolder, uniqueFileName);
+            using (var fileStream = new FileStream(jsonUploadPath, FileMode.Create))
+            {
+                await file.CopyToAsync(fileStream);
+            }
+            var result = await _nflPlayerBulkService.ProcessBulkAsync(players, uploadsFolder, jsonUploadPath, jsonProcessedFolder);
             if (!result.Success)
                 return BadRequest(new { errors = result.Errors });
             return Ok(new { message = $"{result.CreatedCount} jugadores creados exitosamente.", detalles = result.SuccessMessages });

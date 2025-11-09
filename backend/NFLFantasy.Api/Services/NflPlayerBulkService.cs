@@ -132,35 +132,45 @@ namespace NFLFantasy.Api.Services
                     };
                 }
             }
-            // Mover archivo JSON a carpeta de procesados
+            // Mover archivo JSON a carpeta de procesados con formato <nombre>__<timestamp>.json
+            string? moveWarning = null;
             try
             {
                 Directory.CreateDirectory(processedFolder);
+                var originalName = Path.GetFileNameWithoutExtension(originalFilePath);
                 var timestamp = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
-                var processedFileName = $"{timestamp}_{Path.GetFileName(originalFilePath)}";
+                var processedFileName = $"{originalName}__{timestamp}.json";
                 var processedPath = Path.Combine(processedFolder, processedFileName);
                 if (File.Exists(originalFilePath))
                 {
                     File.Move(originalFilePath, processedPath);
                 }
             }
-            catch { /* Si falla el movimiento, no afecta la transacción */ }
+            catch (Exception ex)
+            {
+                moveWarning = $"Advertencia: El archivo JSON no pudo moverse a la carpeta de procesados. Detalle: {ex.Message}";
+            }
 
             return new BulkUploadResult
             {
                 Success = true,
                 Errors = new List<string>(),
                 CreatedCount = createdPlayers.Count,
-                SuccessMessages = successMessages
+                SuccessMessages = successMessages,
+                Warning = moveWarning
             };
         }
     }
 
+    /// <summary>
+    /// Resultado del proceso de carga masiva.
+    /// </summary>
     public class BulkUploadResult
     {
-        public bool Success { get; set; }
-        public List<string> Errors { get; set; } = new();
-        public int CreatedCount { get; set; }
-        public List<string> SuccessMessages { get; set; } = new();
+    public bool Success { get; set; }
+    public List<string> Errors { get; set; } = new();
+    public int CreatedCount { get; set; }
+    public List<string> SuccessMessages { get; set; } = new();
+    public string? Warning { get; set; }
     }
 }

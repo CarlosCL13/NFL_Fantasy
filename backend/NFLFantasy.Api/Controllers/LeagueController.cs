@@ -77,6 +77,7 @@ namespace NFLFantasy.Api.Controllers
         /// Crea una nueva liga y asigna al usuario como comisionado principal.
         /// </summary>
         [HttpPost]
+        [Authorize(Roles = "admin")]
         public async Task<IActionResult> Create([FromBody] CreateLeagueDto dto)
         {
             // Obtiene el userId real del usuario autenticado desde el token JWT, con validación

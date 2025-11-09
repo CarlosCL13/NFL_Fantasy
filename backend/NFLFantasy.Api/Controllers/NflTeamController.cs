@@ -24,7 +24,7 @@ namespace NFLFantasy.Api.Controllers
         /// <param name="dto">Datos del equipo NFL.</param>
         /// <returns>Resultado de la operación.</returns>
         [HttpPost]
-        [Authorize]
+        [Authorize(Roles = "admin")]
         public async Task<IActionResult> Create([FromForm] CreateNflTeamDto dto)
         {
             // Validación del modelo
@@ -68,24 +68,11 @@ namespace NFLFantasy.Api.Controllers
             // Ruta completa del archivo
             var filePath = Path.Combine(uploadsFolder, uniqueFileName);
 
-            // Guardar el archivo en el servidor
-            using (var stream = new FileStream(filePath, FileMode.Create))
-            {
-                await file.CopyToAsync(stream);
-            }
-
             // Guardar como PNG
             var thumbnailFileName = $"thumb_{Guid.NewGuid()}.png";
 
             // Ruta completa del thumbnail
             var thumbnailPath = Path.Combine(uploadsFolder, thumbnailFileName);
-            
-            // Generar thumbnail usando ImageSharp
-            using (var image = Image.Load(filePath))
-            {
-                image.Mutate(x => x.Resize(100, 100)); // tamaño del thumbnail
-                image.Save(thumbnailPath);
-            }
 
             // Actualizar DTO para pasar la ruta de la imagen y thumbnail al service
             var (success, error, team) = await _nflTeamService.CreateNflTeamAsync(
@@ -96,8 +83,24 @@ namespace NFLFantasy.Api.Controllers
             );
 
             // Verificar si hubo un error al crear el equipo NFL
-            if (!success)
+            if (!success){
+
                 return BadRequest(new { error = error ?? "No se pudo crear el equipo NFL. Por favor, verifica los datos e inténtalo de nuevo." });
+
+            }
+
+            // Guardar el archivo en el servidor
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
+            
+            // Generar thumbnail usando ImageSharp
+            using (var image = Image.Load(filePath))
+            {
+                image.Mutate(x => x.Resize(100, 100)); // tamaño del thumbnail
+                image.Save(thumbnailPath);
+            }
 
             // Devuelve respuesta exitosa
             return Ok(new { message = "Equipo NFL creado exitosamente.", teamId = team!.NflTeamId });

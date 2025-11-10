@@ -1,9 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { SeasonService } from '../../core/services/season.service';
 import { LeagueService } from '../../core/services/league.service';
-import { Season } from '../../shared/models/season.model';
 import { League } from '../../shared/models/league.model';
 
 @Component({
@@ -13,10 +11,12 @@ import { League } from '../../shared/models/league.model';
   templateUrl: './search-league.component.html',
   styleUrls: ['./search-league.component.scss'],
 })
-export class SearchLeagueComponent implements OnInit {
-  seasons: Season[] = [];
+export class SearchLeagueComponent {
   leagues: League[] = [];
-  selectedSeasonId: number | null = null;
+  searchName: string = '';
+  showOnlyActive: boolean = false;
+  hasSearched: boolean = false;
+  loading: boolean = false;
 
   joinForm = {
     leagueId: 0,
@@ -25,43 +25,46 @@ export class SearchLeagueComponent implements OnInit {
     teamName: '',
   };
 
-  constructor(private seasonService: SeasonService, private leagueService: LeagueService) {}
+  constructor(private leagueService: LeagueService) {}
 
-  ngOnInit() {
-    this.loadSeasons();
-  }
+  /** Buscar ligas según los filtros */
+  searchLeagues() {
+    // Validar que al menos haya un filtro
+    if (!this.searchName.trim() && !this.showOnlyActive) {
+      alert('Por favor, ingrese un nombre o seleccione "Mostrar solo activas".');
+      return;
+    }
 
-  loadSeasons() {
-    this.seasonService.getAllSeasons().subscribe({
-      next: (res) => (this.seasons = res),
-      error: (err) => console.error('Error al cargar seasons:', err),
-    });
-  }
+    this.hasSearched = true;
+    this.loading = true;
+    const filters: any = {};
 
-  onSelectSeason() {
-    if (!this.selectedSeasonId) return;
-    const filters = { seasonId: this.selectedSeasonId.toString() };
+    if (this.searchName.trim()) filters.name = this.searchName.trim();
+    if (this.showOnlyActive) filters.isActive = true;
 
     this.leagueService.searchLeagues(filters).subscribe({
-      next: (res) => (this.leagues = res),
-      error: (err) => console.error('Error al cargar ligas:', err),
+      next: (res) => {
+        this.leagues = res;
+        this.loading = false;
+      },
+      error: (err) => {
+        console.error('Error al buscar ligas:', err);
+        this.loading = false;
+      },
     });
   }
 
-  /** Cuando el usuario selecciona una liga */
+  /** Seleccionar una liga */
   selectLeague(id: number) {
-    this.joinForm.leagueId = id;
-    this.joinForm.password = '';
-    this.joinForm.alias = '';
-    this.joinForm.teamName = '';
+    this.joinForm = { leagueId: id, password: '', alias: '', teamName: '' };
   }
 
-  /** Permite cancelar la unión */
+  /** Cancelar unión */
   cancelJoin() {
     this.joinForm = { leagueId: 0, password: '', alias: '', teamName: '' };
   }
 
-  /** Envía la solicitud para unirse */
+  /** Unirse a la liga */
   joinLeague() {
     if (!this.joinForm.leagueId) {
       alert('Seleccione una liga para unirse');

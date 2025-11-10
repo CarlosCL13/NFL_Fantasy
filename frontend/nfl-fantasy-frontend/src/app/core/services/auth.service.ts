@@ -42,4 +42,24 @@ export class AuthService {
   isAuthenticated(): boolean {
     return !!this.getToken();
   }
+
+  getUserRole(): string | null {
+    const user = localStorage.getItem('user');
+    if (!user) return null;
+    try {
+      return JSON.parse(user).role || null;
+    } catch {
+      return null;
+    }
+  }
+
+  getUserName(): string | null {
+    const user = localStorage.getItem('user');
+    if (!user) return null;
+    try {
+      return JSON.parse(user).name || null;
+    } catch {
+      return null;
+    }
+  }
 }

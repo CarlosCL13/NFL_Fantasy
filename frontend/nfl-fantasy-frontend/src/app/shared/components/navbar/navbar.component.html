@@ -16,19 +16,35 @@
         <li class="nav-item" *ngIf="auth.isAuthenticated()">
           <a class="nav-link" routerLink="/teams/create">Crear equipo</a>
         </li>
-        <li class="nav-item" *ngIf="auth.isAuthenticated()">
+
+        <li class="nav-item" *ngIf="auth.isAuthenticated() && auth.getUserRole() === 'admin'">
           <a class="nav-link" routerLink="/seasons/create">Crear temporada</a>
         </li>
 
-        <!-- 🔥 Nuevo: Buscar Ligas -->
+        <li class="nav-item" *ngIf="auth.isAuthenticated() && auth.getUserRole() === 'admin'">
+          <a class="nav-link" routerLink="/leagues/create">Crear liga</a>
+        </li>
+
+        <li class="nav-item" *ngIf="auth.isAuthenticated() && auth.getUserRole() === 'admin'">
+          <a class="nav-link" routerLink="/players/create">Crear Jugadores</a>
+        </li>
+
         <li class="nav-item" *ngIf="auth.isAuthenticated()">
-          <a class="nav-link" routerLink="/leagues/search">Buscar ligas</a>
+          <a class="nav-link" routerLink="/leagues/search">Buscar liga</a>
         </li>
       </ul>
 
-      <ul class="navbar-nav">
+      <ul class="navbar-nav align-items-center">
+        <!-- 👤 Nombre del usuario -->
+        <li class="nav-item me-3" *ngIf="auth.isAuthenticated()">
+          <span class="navbar-text fw-semibold"> 👋 {{ auth.getUserName() }} </span>
+        </li>
+
+        <!-- 🔒 Botón de logout -->
         <li class="nav-item" *ngIf="auth.isAuthenticated()">
-          <a class="nav-link" (click)="logout()" style="cursor: pointer"> Cerrar sesión </a>
+          <a class="nav-link text-danger" (click)="logout()" style="cursor: pointer">
+            Cerrar sesión
+          </a>
         </li>
       </ul>
     </div>

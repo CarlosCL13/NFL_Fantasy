@@ -1,0 +1,51 @@
+<div class="dashboard-container">
+  <div class="header">
+    <h1>NFL Fantasy Dashboard</h1>
+    <div class="user-actions">
+      <span>¡Bienvenido!</span>
+      <button class="btn btn-secondary" (click)="logout()">Cerrar Sesión</button>
+    </div>
+  </div>
+
+  <div class="dashboard-grid">
+    <!-- Solo Admin -->
+    <div
+      class="card action-card"
+      *ngIf="authService.getUserRole() === 'admin'"
+      (click)="navigateTo('/leagues/create')"
+    >
+      <div class="card-icon">🏆</div>
+      <h3>Crear Liga</h3>
+      <p>Crea una nueva liga de fantasy y conviértete en comisionado</p>
+    </div>
+
+    <!-- Solo Admin -->
+    <div
+      class="card action-card"
+      *ngIf="authService.getUserRole() === 'admin'"
+      (click)="navigateTo('/players/create')"
+    >
+      <div class="card-icon">🏈</div>
+      <h3>Crear Jugadores</h3>
+      <p>Crea nuevos jugadores para los respectivos equipos</p>
+    </div>
+
+    <!-- Todos los autenticados -->
+    <div class="card action-card" (click)="navigateTo('/teams/create')">
+      <div class="card-icon">👥</div>
+      <h3>Crear Equipo</h3>
+      <p>Crea un nuevo equipo para unirte a una liga existente</p>
+    </div>
+
+    <!-- Solo Admin -->
+    <div
+      class="card action-card"
+      *ngIf="authService.getUserRole() === 'admin'"
+      (click)="navigateTo('/seasons/create')"
+    >
+      <div class="card-icon">📅</div>
+      <h3>Crear Temporada</h3>
+      <p>Administra las temporadas del sistema (Solo administradores)</p>
+    </div>
+  </div>
+</div>

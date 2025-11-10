@@ -13,11 +13,13 @@ export class NflPlayerService {
     return this.http.post(this.api, formData);
   }
 
-  getPositions(): Observable<any[]> {
-    return this.http.get<any[]>(`${environment.apiUrl}/api/Position`);
+  bulkUpload(file: File) {
+    const formData = new FormData();
+    formData.append('File', file);
+    return this.http.post(`${this.api}/bulk-upload`, formData);
   }
 
-  getTeams(): Observable<any[]> {
-    return this.http.get<any[]>(`${environment.apiUrl}/api/nflteams`);
+  getPositions(): Observable<any[]> {
+    return this.http.get<any[]>(`${environment.apiUrl}/api/Position`);
   }
 }

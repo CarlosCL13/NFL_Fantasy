@@ -3,6 +3,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { NflPlayerService } from '../../../core/services/nflplayer.service';
+import { NflTeamService } from '../../../core/services/nflteam.service';
 
 @Component({
   selector: 'app-nfl-player-create',
@@ -17,9 +18,14 @@ export class NflPlayerCreateComponent implements OnInit {
   file?: File;
   form: any;
 
+  bulkFile?: File;
+  bulkMessage = '';
+  bulkError = '';
+
   constructor(
     private fb: FormBuilder,
     private playerService: NflPlayerService,
+    private teamService: NflTeamService,
     private router: Router
   ) {
     this.form = this.fb.group({
@@ -43,7 +49,7 @@ export class NflPlayerCreateComponent implements OnInit {
   }
 
   loadTeams(): void {
-    this.playerService.getTeams().subscribe({
+    this.teamService.getTeams().subscribe({
       next: (data) => (this.teams = data),
       error: () => alert('Error cargando equipos NFL.'),
     });
@@ -81,6 +87,34 @@ export class NflPlayerCreateComponent implements OnInit {
         } else {
           alert('❌ Error creando jugador.');
         }
+      },
+    });
+  }
+
+  onBulkFileChange(event: any) {
+    this.bulkFile = event.target.files?.[0];
+    this.bulkMessage = '';
+    this.bulkError = '';
+  }
+
+  uploadBulk() {
+    if (!this.bulkFile) {
+      this.bulkError = 'Debes seleccionar un archivo JSON antes de subirlo.';
+      return;
+    }
+
+    this.playerService.bulkUpload(this.bulkFile).subscribe({
+      next: (res: any) => {
+        this.bulkMessage = res.message || '✅ Jugadores cargados exitosamente.';
+        this.bulkError = '';
+      },
+      error: (err) => {
+        console.error('Error al subir archivo JSON:', err);
+        this.bulkError =
+          err.error?.errors?.join('\n') ||
+          err.error?.error ||
+          '❌ Error procesando el archivo JSON.';
+        this.bulkMessage = '';
       },
     });
   }

@@ -3,6 +3,11 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 
+/**
+ * Componente de dashboard principal
+ * Ahora maneja la navegación después del logout localmente
+ * Cumple con Single Responsibility Principle
+ */
 @Component({
   selector: 'app-dashboard',
   standalone: true,
@@ -12,7 +17,6 @@ import { AuthService } from '../../core/services/auth.service';
 })
 export class DashboardComponent {
   constructor(public authService: AuthService, private router: Router) {}
-  // 👆 authService ahora es público para poder usarlo en el HTML
 
   navigateTo(route: string): void {
     this.router.navigate([route]);
@@ -20,5 +24,7 @@ export class DashboardComponent {
 
   logout(): void {
     this.authService.logout();
+    // El componente maneja la navegación, no el servicio
+    this.router.navigate(['/login']);
   }
 }

@@ -3,27 +3,74 @@
   <form [formGroup]="form" (ngSubmit)="submit()">
     <div class="mb-3">
       <label class="form-label">Nombre</label>
-      <input class="form-control" formControlName="name" />
+      <input 
+        class="form-control" 
+        [class.is-invalid]="form.get('name')?.invalid && form.get('name')?.touched"
+        formControlName="name" 
+      />
+      <div class="invalid-feedback" *ngIf="form.get('name')?.hasError('required') && form.get('name')?.touched">
+        El nombre es requerido
+      </div>
     </div>
 
     <div class="mb-3">
       <label class="form-label">Email</label>
-      <input class="form-control" formControlName="email" type="email" />
+      <input 
+        class="form-control" 
+        [class.is-invalid]="form.get('email')?.invalid && form.get('email')?.touched"
+        formControlName="email" 
+        type="email" 
+      />
+      <div class="invalid-feedback" *ngIf="form.get('email')?.hasError('required') && form.get('email')?.touched">
+        El email es requerido
+      </div>
+      <div class="invalid-feedback" *ngIf="form.get('email')?.hasError('email') && form.get('email')?.touched">
+        El email no es válido
+      </div>
     </div>
 
     <div class="mb-3">
       <label class="form-label">Alias</label>
-      <input class="form-control" formControlName="alias" />
+      <input 
+        class="form-control" 
+        [class.is-invalid]="form.get('alias')?.invalid && form.get('alias')?.touched"
+        formControlName="alias" 
+      />
+      <div class="invalid-feedback" *ngIf="form.get('alias')?.hasError('required') && form.get('alias')?.touched">
+        El alias es requerido
+      </div>
     </div>
 
     <div class="mb-3">
       <label class="form-label">Contraseña</label>
-      <input class="form-control" formControlName="password" type="password" />
+      <input 
+        class="form-control" 
+        [class.is-invalid]="form.get('password')?.invalid && form.get('password')?.touched"
+        formControlName="password" 
+        type="password" 
+      />
+      <div class="invalid-feedback" *ngIf="form.get('password')?.hasError('required') && form.get('password')?.touched">
+        La contraseña es requerida
+      </div>
+      <div class="invalid-feedback" *ngIf="form.get('password')?.hasError('minlength') && form.get('password')?.touched">
+        La contraseña debe tener al menos 6 caracteres
+      </div>
     </div>
 
     <div class="mb-3">
       <label class="form-label">Confirmar Contraseña</label>
-      <input class="form-control" formControlName="confirmPassword" type="password" />
+      <input 
+        class="form-control" 
+        [class.is-invalid]="form.get('confirmPassword')?.invalid && form.get('confirmPassword')?.touched"
+        formControlName="confirmPassword" 
+        type="password" 
+      />
+      <div class="invalid-feedback" *ngIf="form.get('confirmPassword')?.hasError('required') && form.get('confirmPassword')?.touched">
+        La confirmación de contraseña es requerida
+      </div>
+      <div class="invalid-feedback" *ngIf="form.get('confirmPassword')?.hasError('passwordMismatch') && form.get('confirmPassword')?.touched">
+        Las contraseñas no coinciden
+      </div>
     </div>
 
     <div class="mb-3">

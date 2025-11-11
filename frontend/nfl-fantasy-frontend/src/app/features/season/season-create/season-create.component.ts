@@ -5,7 +5,14 @@ import { Router } from '@angular/router';
 import { SeasonService } from '../../../core/services/season.service';
 import { CreateSeasonDto } from '../../../shared/models/season.model';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { ErrorHandlerService } from '../../../core/services/error-handler.service';
+import { DateValidators } from '../../../shared/validators/date.validators';
 
+/**
+ * Componente para crear una nueva temporada
+ * Refactorizado para usar validadores reutilizables y ErrorHandlerService
+ * Cumple mejor con Single Responsibility Principle y Open/Closed Principle
+ */
 @Component({
   selector: 'app-season-create',
   standalone: true,
@@ -24,7 +31,8 @@ export class SeasonCreateComponent {
   constructor(
     private formBuilder: FormBuilder,
     private seasonService: SeasonService,
-    public router: Router
+    public router: Router,
+    private errorHandler: ErrorHandlerService
   ) {
     this.seasonForm = this.createSeasonForm();
     this.setupNameValidation();
@@ -33,6 +41,7 @@ export class SeasonCreateComponent {
 
   /**
    * Crea el formulario reactivo para la temporada con validaciones
+   * Ahora usa el validador reutilizable DateValidators
    * @returns FormGroup configurado para crear temporada
    */
   private createSeasonForm(): FormGroup {
@@ -50,31 +59,42 @@ export class SeasonCreateComponent {
       startDate: ['', Validators.required],
       endDate: ['', Validators.required],
       isCurrent: [false]
-    });
-  }
-
-  /**
-   * Valida que la fecha de fin sea posterior a la fecha de inicio
-   * @returns true si las fechas son válidas, false en caso contrario
-   */
-  private validateDates(): boolean {
-    const fechaInicio = new Date(this.seasonForm.get('startDate')?.value);
-    const fechaFin = new Date(this.seasonForm.get('endDate')?.value);
-    
-    return fechaFin > fechaInicio;
+    }, { validators: DateValidators.endDateAfterStartDate('startDate', 'endDate') });
   }
 
   /**
    * Maneja el envío del formulario para crear la temporada
+   * Ahora usa ErrorHandlerService para manejar errores
    */
   onSubmit(): void {
     if (this.seasonForm.invalid) {
       this.markFormGroupTouched();
-      return;
-    }
-
-    if (!this.validateDates()) {
-      alert('❌ La fecha de fin debe ser posterior a la fecha de inicio');
+      
+      let errorMessage = 'Por favor, corrija los siguientes errores:\n';
+      
+      if (this.seasonForm.get('name')?.hasError('required')) {
+        errorMessage += '- El nombre de la temporada es requerido\n';
+      }
+      if (this.seasonForm.get('weeksCount')?.hasError('required')) {
+        errorMessage += '- El número de semanas es requerido\n';
+      }
+      if (this.seasonForm.get('weeksCount')?.hasError('min')) {
+        errorMessage += '- El número de semanas debe ser al menos 1\n';
+      }
+      if (this.seasonForm.get('weeksCount')?.hasError('max')) {
+        errorMessage += '- El número de semanas no puede exceder 30\n';
+      }
+      if (this.seasonForm.get('startDate')?.hasError('required')) {
+        errorMessage += '- La fecha de inicio es requerida\n';
+      }
+      if (this.seasonForm.get('endDate')?.hasError('required')) {
+        errorMessage += '- La fecha de fin es requerida\n';
+      }
+      if (this.seasonForm.errors?.['endDateBeforeStartDate']) {
+        errorMessage += '- La fecha de fin debe ser posterior a la fecha de inicio\n';
+      }
+      
+      alert(errorMessage);
       return;
     }
 
@@ -94,28 +114,14 @@ export class SeasonCreateComponent {
         this.router.navigate(['/']);
       },
       error: (error) => {
-        console.error('Error al crear temporada:', error);
-        this.handleError(error);
+        const errorMessage = this.errorHandler.handleError(error, 'creación de temporada');
+        alert(errorMessage);
         this.isSubmitting = false;
       },
       complete: () => {
         this.isSubmitting = false;
       }
     });
-  }
-
-  /**
-   * Maneja los errores del servidor de manera amigable
-   * @param error - Error recibido del servidor
-   */
-  private handleError(error: any): void {
-    if (error.error && typeof error.error === 'object') {
-      alert(`❌ ${error.error.error || 'Error al crear la temporada'}`);
-    } else if (typeof error.error === 'string') {
-      alert(`❌ ${error.error}`);
-    } else {
-      alert('❌ Error al crear la temporada. Por favor, intente nuevamente.');
-    }
   }
 
   /**

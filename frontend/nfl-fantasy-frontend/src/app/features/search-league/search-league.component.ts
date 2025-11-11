@@ -3,7 +3,11 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { LeagueService } from '../../core/services/league.service';
 import { League } from '../../shared/models/league.model';
+import { ErrorHandlerService } from '../../core/services/error-handler.service';
 
+/**
+ * Componente para buscar y unirse a ligas
+ */
 @Component({
   selector: 'app-search-league',
   standalone: true,
@@ -25,7 +29,10 @@ export class SearchLeagueComponent {
     teamName: '',
   };
 
-  constructor(private leagueService: LeagueService) {}
+  constructor(
+    private leagueService: LeagueService,
+    private errorHandler: ErrorHandlerService
+  ) {}
 
   /** Buscar ligas según los filtros */
   searchLeagues() {
@@ -48,7 +55,8 @@ export class SearchLeagueComponent {
         this.loading = false;
       },
       error: (err) => {
-        console.error('Error al buscar ligas:', err);
+        const errorMessage = this.errorHandler.handleError(err, 'búsqueda de ligas');
+        alert(errorMessage);
         this.loading = false;
       },
     });
@@ -71,18 +79,32 @@ export class SearchLeagueComponent {
       return;
     }
 
+    // Validar campos requeridos
+    let errorMessage = '';
+    
+    if (!this.joinForm.password.trim()) {
+      errorMessage += '- La contraseña de la liga es requerida\n';
+    }
+    if (!this.joinForm.alias.trim()) {
+      errorMessage += '- El alias de su equipo es requerido\n';
+    }
+    if (!this.joinForm.teamName.trim()) {
+      errorMessage += '- El nombre de su equipo es requerido\n';
+    }
+    
+    if (errorMessage) {
+      alert('Por favor, corrija los siguientes errores:\n' + errorMessage);
+      return;
+    }
+
     this.leagueService.joinLeague(this.joinForm).subscribe({
       next: (res) => {
-        alert(res?.message || 'Te uniste correctamente a la liga.');
+        alert((res?.message || 'Te uniste correctamente a la liga.'));
         this.cancelJoin();
       },
       error: (err) => {
-        console.error('Error al unirse a la liga:', err);
-        if (err.error) {
-          alert(err.error.error || 'Error desconocido al unirse a la liga.');
-        } else {
-          alert('Ocurrió un error inesperado.');
-        }
+        const errorMessage = this.errorHandler.handleError(err, 'unirse a la liga');
+        alert(errorMessage);
       },
     });
   }

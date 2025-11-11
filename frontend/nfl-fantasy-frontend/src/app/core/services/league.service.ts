@@ -8,11 +8,16 @@ import {
   NameAvailabilityResponse,
 } from '../../shared/models/league.model';
 import { environment } from '../../../environments/environment';
+import { ILeagueService } from '../interfaces/league-service.interface';
 
+/**
+ * Servicio para gestionar operaciones relacionadas con ligas
+ * Implementa ILeagueService para cumplir con Dependency Inversion Principle (DIP)
+ */
 @Injectable({
   providedIn: 'root',
 })
-export class LeagueService {
+export class LeagueService implements ILeagueService {
   private readonly apiUrl = `${environment.apiUrl}/api/leagues`;
 
   constructor(private httpClient: HttpClient) {}

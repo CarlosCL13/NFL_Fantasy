@@ -5,7 +5,13 @@ import { Router } from '@angular/router';
 import { LeagueService } from '../../../core/services/league.service';
 import { CreateLeagueDto } from '../../../shared/models/league.model';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { ErrorHandlerService } from '../../../core/services/error-handler.service';
+import { PasswordValidators } from '../../../shared/validators/password.validators';
 
+/**
+ * Componente para crear una nueva liga
+ * Refactorizado para usar validadores reutilizables y ErrorHandlerService
+ */
 @Component({
   selector: 'app-league-create',
   standalone: true,
@@ -33,7 +39,8 @@ export class LeagueCreateComponent {
   constructor(
     private formBuilder: FormBuilder,
     private leagueService: LeagueService,
-    public router: Router
+    public router: Router,
+    private errorHandler: ErrorHandlerService
   ) {
     this.leagueForm = this.createLeagueForm();
     this.setupNameValidation();
@@ -41,6 +48,7 @@ export class LeagueCreateComponent {
 
   /**
    * Crea el formulario reactivo para la liga con validaciones
+   * Ahora usa el validador reutilizable PasswordValidators
    * @returns FormGroup configurado para crear liga
    */
   private createLeagueForm(): FormGroup {
@@ -60,7 +68,7 @@ export class LeagueCreateComponent {
         Validators.required,
         Validators.minLength(8),
         Validators.maxLength(12),
-        Validators.pattern('^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9]).{8,12}$')
+        PasswordValidators.securePassword()
       ]],
       confirmPassword: ['', [
         Validators.required
@@ -73,23 +81,7 @@ export class LeagueCreateComponent {
         Validators.minLength(1),
         Validators.maxLength(100)
       ]]
-    }, { validators: this.passwordMatchValidator });
-  }
-
-  /**
-   * Validador personalizado para confirmar que las contraseñas coincidan
-   * @param form - FormGroup a validar
-   * @returns objeto con error si no coinciden, null si coinciden
-   */
-  private passwordMatchValidator(form: FormGroup) {
-    const password = form.get('password');
-    const confirmPassword = form.get('confirmPassword');
-    
-    if (!password || !confirmPassword) {
-      return null;
-    }
-    
-    return password.value === confirmPassword.value ? null : { passwordMismatch: true };
+    }, { validators: PasswordValidators.matchPassword('password', 'confirmPassword') });
   }
 
   /**
@@ -105,15 +97,57 @@ export class LeagueCreateComponent {
 
   /**
    * Maneja el envío del formulario para crear la liga
+   * Ahora usa ErrorHandlerService para manejar errores
    */
   onSubmit(): void {
     if (this.leagueForm.invalid) {
       this.markFormGroupTouched();
-      alert('Por favor, complete todos los campos obligatorios y corrija los errores antes de crear la liga.');
+      
+      let errorMessage = 'Por favor, corrija los siguientes errores:\n';
+      
+      if (this.leagueForm.get('name')?.hasError('required')) {
+        errorMessage += '- El nombre de la liga es requerido\n';
+      }
+      if (this.leagueForm.get('name')?.hasError('minlength')) {
+        errorMessage += '- El nombre de la liga debe tener al menos 1 caracter\n';
+      }
+      if (this.leagueForm.get('name')?.hasError('maxlength')) {
+        errorMessage += '- El nombre de la liga no puede exceder 100 caracteres\n';
+      }
+      if (this.leagueForm.get('description')?.hasError('maxlength')) {
+        errorMessage += '- La descripción no puede exceder 500 caracteres\n';
+      }
+      if (this.leagueForm.get('maxTeams')?.hasError('required')) {
+        errorMessage += '- Debe seleccionar la cantidad de equipos\n';
+      }
+      if (this.leagueForm.get('password')?.hasError('required')) {
+        errorMessage += '- La contraseña es requerida\n';
+      }
+      if (this.leagueForm.get('password')?.hasError('minlength')) {
+        errorMessage += '- La contraseña debe tener al menos 8 caracteres\n';
+      }
+      if (this.leagueForm.get('password')?.hasError('maxlength')) {
+        errorMessage += '- La contraseña no puede exceder 12 caracteres\n';
+      }
+      if (this.leagueForm.get('password')?.hasError('securePassword')) {
+        errorMessage += '- La contraseña debe contener mayúsculas, minúsculas y números\n';
+      }
+      if (this.leagueForm.get('confirmPassword')?.hasError('required')) {
+        errorMessage += '- Debe confirmar la contraseña\n';
+      }
+      if (this.leagueForm.get('confirmPassword')?.hasError('passwordMismatch')) {
+        errorMessage += '- Las contraseñas no coinciden\n';
+      }
+      if (this.leagueForm.get('commissionerTeamName')?.hasError('required')) {
+        errorMessage += '- El nombre de su equipo es requerido\n';
+      }
+      if (this.leagueForm.get('playoffType')?.hasError('required')) {
+        errorMessage += '- Debe seleccionar el tipo de playoffs\n';
+      }
+      
+      alert(errorMessage);
       return;
     }
-
-
 
     if (!this.nameAvailable) {
       alert('El nombre ingresado para la liga ya está en uso. Por favor, elija un nombre único y diferente para su liga.');
@@ -146,61 +180,14 @@ export class LeagueCreateComponent {
         this.router.navigate(['/dashboard']);
       },
       error: (error) => {
-        console.error('Error al crear liga:', error);
-        this.handleError(error);
+        const errorMessage = this.errorHandler.handleError(error, 'creación de liga');
+        alert(errorMessage);
         this.isSubmitting = false;
       },
       complete: () => {
         this.isSubmitting = false;
       }
     });
-  }
-
-  /**
-   * Maneja los errores del servidor de manera amigable
-   * @param error - Error recibido del servidor
-   */
-  private handleError(error: any): void {
-    let errorMessage = '';
-    
-    if (error.status === 400) {
-      // Errores de validación del backend
-      if (error.error && typeof error.error === 'object') {
-        const backendError = error.error.error || error.error.message;
-        
-        if (backendError?.includes('Ya existe una liga con ese nombre')) {
-          errorMessage = 'El nombre de la liga ya está en uso. Por favor, elija un nombre diferente y único para su liga.';
-        } else if (backendError?.includes('contraseña no cumple el formato')) {
-          errorMessage = 'La contraseña no cumple los requisitos de seguridad. Debe tener entre 8-12 caracteres, ser alfanumérica y contener al menos una minúscula, una mayúscula y un número.';
-        } else if (backendError?.includes('cantidad de equipos no es válida')) {
-          errorMessage = 'La cantidad de equipos seleccionada no es válida. Debe seleccionar entre 4, 6, 8, 10, 12, 14, 16, 18 o 20 equipos.';
-        } else if (backendError?.includes('No hay una temporada actual activa')) {
-          errorMessage = 'No se puede crear la liga porque no hay una temporada activa. Contacte al administrador del sistema.';
-        } else if (backendError?.includes('El alias del equipo ya existe')) {
-          errorMessage = 'El nombre del equipo que eligió genera un alias que ya está en uso. Por favor, elija un nombre diferente para su equipo.';
-        } else if (backendError?.includes('nombre de equipo ya existe')) {
-          errorMessage = 'El nombre del equipo ya está en uso en esta liga. Por favor, elija un nombre diferente para su equipo.';
-        } else {
-          errorMessage = `Error de validación: ${backendError}`;
-        }
-      } else if (typeof error.error === 'string') {
-        errorMessage = `Error de validación: ${error.error}`;
-      } else {
-        errorMessage = 'Los datos ingresados no son válidos. Por favor, revise todos los campos y corrija los errores.';
-      }
-    } else if (error.status === 401) {
-      errorMessage = 'Su sesión ha expirado. Por favor, inicie sesión nuevamente para crear la liga.';
-    } else if (error.status === 403) {
-      errorMessage = 'No tiene permisos para crear una liga. Contacte al administrador del sistema.';
-    } else if (error.status === 500) {
-      errorMessage = 'Error interno del servidor. Por favor, intente nuevamente en unos minutos. Si el problema persiste, contacte al soporte técnico.';
-    } else if (error.status === 0 || !navigator.onLine) {
-      errorMessage = 'No se pudo conectar con el servidor. Verifique su conexión a internet e intente nuevamente.';
-    } else {
-      errorMessage = 'Ocurrió un error inesperado al crear la liga. Por favor, intente nuevamente. Si el problema persiste, contacte al soporte técnico.';
-    }
-    
-    alert(errorMessage);
   }
 
   /**

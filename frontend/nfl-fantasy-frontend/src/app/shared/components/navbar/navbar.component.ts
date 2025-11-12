@@ -1,8 +1,12 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 
+/**
+ * Componente de barra de navegación
+ * Refactorizado para manejar navegación localmente
+ */
 @Component({
   selector: 'app-navbar',
   standalone: true,
@@ -11,8 +15,14 @@ import { AuthService } from '../../../core/services/auth.service';
   styleUrl: './navbar.component.scss',
 })
 export class NavbarComponent {
-  constructor(public auth: AuthService) {}
+  constructor(
+    public auth: AuthService,
+    private router: Router
+  ) {}
+
   logout() {
     this.auth.logout();
+    // El componente maneja la navegación, no el servicio
+    this.router.navigate(['/login']);
   }
 }

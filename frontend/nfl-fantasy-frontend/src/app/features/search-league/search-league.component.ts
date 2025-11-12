@@ -1,11 +1,13 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { SeasonService } from '../../core/services/season.service';
 import { LeagueService } from '../../core/services/league.service';
-import { Season } from '../../shared/models/season.model';
 import { League } from '../../shared/models/league.model';
+import { ErrorHandlerService } from '../../core/services/error-handler.service';
 
+/**
+ * Componente para buscar y unirse a ligas
+ */
 @Component({
   selector: 'app-search-league',
   standalone: true,
@@ -13,10 +15,12 @@ import { League } from '../../shared/models/league.model';
   templateUrl: './search-league.component.html',
   styleUrls: ['./search-league.component.scss'],
 })
-export class SearchLeagueComponent implements OnInit {
-  seasons: Season[] = [];
+export class SearchLeagueComponent {
   leagues: League[] = [];
-  selectedSeasonId: number | null = null;
+  searchName: string = '';
+  showOnlyActive: boolean = false;
+  hasSearched: boolean = false;
+  loading: boolean = false;
 
   joinForm = {
     leagueId: 0,
@@ -25,61 +29,82 @@ export class SearchLeagueComponent implements OnInit {
     teamName: '',
   };
 
-  constructor(private seasonService: SeasonService, private leagueService: LeagueService) {}
+  constructor(
+    private leagueService: LeagueService,
+    private errorHandler: ErrorHandlerService
+  ) {}
 
-  ngOnInit() {
-    this.loadSeasons();
-  }
+  /** Buscar ligas según los filtros */
+  searchLeagues() {
+    // Validar que al menos haya un filtro
+    if (!this.searchName.trim() && !this.showOnlyActive) {
+      alert('Por favor, ingrese un nombre o seleccione "Mostrar solo activas".');
+      return;
+    }
 
-  loadSeasons() {
-    this.seasonService.getAllSeasons().subscribe({
-      next: (res) => (this.seasons = res),
-      error: (err) => console.error('Error al cargar seasons:', err),
-    });
-  }
+    this.hasSearched = true;
+    this.loading = true;
+    const filters: any = {};
 
-  onSelectSeason() {
-    if (!this.selectedSeasonId) return;
-    const filters = { seasonId: this.selectedSeasonId.toString() };
+    if (this.searchName.trim()) filters.name = this.searchName.trim();
+    if (this.showOnlyActive) filters.isActive = true;
 
     this.leagueService.searchLeagues(filters).subscribe({
-      next: (res) => (this.leagues = res),
-      error: (err) => console.error('Error al cargar ligas:', err),
+      next: (res) => {
+        this.leagues = res;
+        this.loading = false;
+      },
+      error: (err) => {
+        const errorMessage = this.errorHandler.handleError(err, 'búsqueda de ligas');
+        alert(errorMessage);
+        this.loading = false;
+      },
     });
   }
 
-  /** Cuando el usuario selecciona una liga */
+  /** Seleccionar una liga */
   selectLeague(id: number) {
-    this.joinForm.leagueId = id;
-    this.joinForm.password = '';
-    this.joinForm.alias = '';
-    this.joinForm.teamName = '';
+    this.joinForm = { leagueId: id, password: '', alias: '', teamName: '' };
   }
 
-  /** Permite cancelar la unión */
+  /** Cancelar unión */
   cancelJoin() {
     this.joinForm = { leagueId: 0, password: '', alias: '', teamName: '' };
   }
 
-  /** Envía la solicitud para unirse */
+  /** Unirse a la liga */
   joinLeague() {
     if (!this.joinForm.leagueId) {
       alert('Seleccione una liga para unirse');
       return;
     }
 
+    // Validar campos requeridos
+    let errorMessage = '';
+    
+    if (!this.joinForm.password.trim()) {
+      errorMessage += '- La contraseña de la liga es requerida\n';
+    }
+    if (!this.joinForm.alias.trim()) {
+      errorMessage += '- El alias de su equipo es requerido\n';
+    }
+    if (!this.joinForm.teamName.trim()) {
+      errorMessage += '- El nombre de su equipo es requerido\n';
+    }
+    
+    if (errorMessage) {
+      alert('Por favor, corrija los siguientes errores:\n' + errorMessage);
+      return;
+    }
+
     this.leagueService.joinLeague(this.joinForm).subscribe({
       next: (res) => {
-        alert(res?.message || 'Te uniste correctamente a la liga.');
+        alert((res?.message || 'Te uniste correctamente a la liga.'));
         this.cancelJoin();
       },
       error: (err) => {
-        console.error('Error al unirse a la liga:', err);
-        if (err.error) {
-          alert(err.error.error || 'Error desconocido al unirse a la liga.');
-        } else {
-          alert('Ocurrió un error inesperado.');
-        }
+        const errorMessage = this.errorHandler.handleError(err, 'unirse a la liga');
+        alert(errorMessage);
       },
     });
   }

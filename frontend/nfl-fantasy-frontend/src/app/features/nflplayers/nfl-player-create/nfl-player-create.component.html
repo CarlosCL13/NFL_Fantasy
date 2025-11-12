@@ -1,0 +1,60 @@
+<div class="container mt-4">
+  <h3>Gestión de Jugadores NFL</h3>
+
+  <!-- === Sección de creación individual === -->
+  <form [formGroup]="form" (ngSubmit)="submit()">
+    <div class="mb-3">
+      <label class="form-label">Nombre *</label>
+      <input type="text" class="form-control" formControlName="name" />
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Posición *</label>
+      <select class="form-select" formControlName="positionId">
+        <option value="">Seleccione posición</option>
+        <option *ngFor="let pos of positions" [value]="pos.positionId">
+          {{ pos.name }}
+        </option>
+      </select>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Equipo NFL *</label>
+      <select class="form-select" formControlName="nflTeamId">
+        <option value="">Seleccione equipo</option>
+        <option *ngFor="let team of teams" [value]="team.nflTeamId">
+          {{ team.name }}
+        </option>
+      </select>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Imagen *</label>
+      <input type="file" class="form-control" accept="image/*" (change)="onFileChange($event)" />
+    </div>
+
+    <button class="btn btn-primary me-3" type="submit">Crear Jugador</button>
+  </form>
+
+  <hr class="my-4" />
+
+  <!-- === Sección de carga masiva === -->
+  <div>
+    <h5>Carga Masiva de Jugadores (archivo JSON)</h5>
+    <p class="text-muted">
+      Puedes subir un archivo <code>.json</code> con varios jugadores para crearlos todos de una
+      vez.
+    </p>
+
+    <div class="mb-3">
+      <input type="file" class="form-control" accept=".json" (change)="onBulkFileChange($event)" />
+    </div>
+
+    <button class="btn btn-success" (click)="uploadBulk()">Subir Archivo JSON</button>
+
+    <div *ngIf="bulkMessage" class="alert alert-success mt-3">{{ bulkMessage }}</div>
+    <div *ngIf="bulkError" class="alert alert-danger mt-3" style="white-space: pre-line">
+      {{ bulkError }}
+    </div>
+  </div>
+</div>

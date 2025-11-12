@@ -7,19 +7,29 @@ namespace NFLFantasy.Api.Models
     /// </summary>
     public class LeagueAudit
     {
-        // Id único del registro de auditoría
+        /// <summary>
+        /// Identificador único del registro de auditoría.
+        /// </summary>
         public int LeagueAuditId { get; set; }
 
-        // Id del usuario que realizó la acción
+        /// <summary>
+        /// Id del usuario que realizó la acción.
+        /// </summary>
         public int UserId { get; set; }
 
-        // Id de la liga sobre la que se realizó la acción
+        /// <summary>
+        /// Id de la liga sobre la que se realizó la acción.
+        /// </summary>
         public int LeagueId { get; set; }
 
-        // Acción realizada (ejemplo: "Join")
+        /// <summary>
+        /// Acción realizada (ejemplo: "Join")
+        /// </summary>
         public string Action { get; set; } = string.Empty;
 
-        // Fecha y hora de la acción (UTC)
+        /// <summary>
+        /// Fecha y hora de la acción (UTC)
+        /// </summary>
         public DateTime Timestamp { get; set; } = DateTime.UtcNow;
     }
 }

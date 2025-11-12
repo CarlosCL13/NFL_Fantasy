@@ -3,7 +3,13 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { NflTeamService } from '../../../core/services/nflteam.service';
+import { ErrorHandlerService } from '../../../core/services/error-handler.service';
 
+/**
+ * Componente para crear equipos NFL
+ * Refactorizado para usar ErrorHandlerService
+ * Cumple con Single Responsibility Principle
+ */
 @Component({
   selector: 'app-team-create',
   standalone: true,
@@ -13,13 +19,13 @@ import { NflTeamService } from '../../../core/services/nflteam.service';
 })
 export class TeamCreateComponent {
   file?: File;
-
   form: any;
 
   constructor(
     private fb: FormBuilder,
     private teamService: NflTeamService,
-    private router: Router
+    private router: Router,
+    private errorHandler: ErrorHandlerService
   ) {
     this.form = this.fb.group({
       name: ['', Validators.required],
@@ -32,7 +38,22 @@ export class TeamCreateComponent {
   }
 
   submit() {
-    if (this.form.invalid) return;
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      
+      let errorMessage = 'Por favor, corrija los siguientes errores:\n';
+      
+      if (this.form.get('name')?.hasError('required')) {
+        errorMessage += '- El nombre del equipo es requerido\n';
+      }
+      if (this.form.get('city')?.hasError('required')) {
+        errorMessage += '- La ciudad del equipo es requerida\n';
+      }
+      
+      alert(errorMessage);
+      return;
+    }
+
     const fd = new FormData();
     fd.append('Name', this.form.value.name ?? '');
     fd.append('City', this.form.value.city ?? '');
@@ -40,19 +61,12 @@ export class TeamCreateComponent {
 
     this.teamService.createTeam(fd).subscribe({
       next: () => {
-        alert('Equipo creado');
+        alert('Equipo creado exitosamente');
         this.router.navigate(['/']);
       },
       error: (err) => {
-        console.error('Error del backend:', err);
-
-        if (err.error && typeof err.error === 'object') {
-          alert(`❌ ${err.error.error || 'Error creando equipo'}`);
-        } else if (typeof err.error === 'string') {
-          alert(`❌ ${err.error}`);
-        } else {
-          alert('❌ Error creando equipo');
-        }
+        const errorMessage = this.errorHandler.handleError(err, 'creación de equipo');
+        alert(errorMessage);
       },
     });
   }

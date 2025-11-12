@@ -11,9 +11,6 @@ namespace NFLFantasy.Api.DTO
         [StringLength(100)]
         public string? Name { get; set; }
 
-        /// <summary>Id de la temporada para filtrar.</summary>
-        public int? SeasonId { get; set; }
-
         /// <summary>Estado de la liga (activa/inactiva).</summary>
         public bool? IsActive { get; set; }
     }

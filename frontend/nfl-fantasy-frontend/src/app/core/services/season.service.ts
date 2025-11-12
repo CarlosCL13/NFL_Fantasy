@@ -3,11 +3,16 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { CreateSeasonDto, Season } from '../../shared/models/season.model';
 import { environment } from '../../../environments/environment';
+import { ISeasonService } from '../interfaces/season-service.interface';
 
+/**
+ * Servicio para gestionar operaciones relacionadas con temporadas
+ * Implementa ISeasonService para cumplir con Dependency Inversion Principle (DIP)
+ */
 @Injectable({
   providedIn: 'root'
 })
-export class SeasonService {
+export class SeasonService implements ISeasonService {
   private readonly apiUrl = `${environment.apiUrl}/api/seasons`;
 
   constructor(private httpClient: HttpClient) { }

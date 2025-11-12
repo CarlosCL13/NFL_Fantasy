@@ -3,6 +3,10 @@ using NFLFantasy.Api.Models;
 using NFLFantasy.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using NFLFantasy.Api;
+using NFLFantasy.Api.Repositories;
+using NFLFantasy.Api.Validators;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Processing;
 
 namespace NFLFantasy.Api.Services
 {
@@ -13,6 +17,9 @@ namespace NFLFantasy.Api.Services
     {
         //Referencia al contexto de la base de datos
         private readonly FantasyContext _context;
+
+        //Referencia al repositorio de equipos NFL
+        private readonly NFLFantasy.Api.Repositories.NflTeamRepository _repository;
         
         /// <summary>
         /// Constructor del servicio NflTeamService.
@@ -20,6 +27,7 @@ namespace NFLFantasy.Api.Services
         public NflTeamService(FantasyContext context)
         {
             _context = context;
+            _repository = new NFLFantasy.Api.Repositories.NflTeamRepository(context);
         }
 
         /// <summary>
@@ -27,32 +35,84 @@ namespace NFLFantasy.Api.Services
         /// </summary>
         /// <param name="dto">DTO con los datos del equipo.</param>
         /// <returns>Tupla con éxito, mensaje de error y el equipo creado.</returns>
-        public async Task<(bool Success, string? Error, NflTeam? Team)> CreateNflTeamAsync(string name, string city, string imageFileName, string thumbnailFileName)
+        public async Task<(bool Success, string? Error, NflTeam? Team)> CreateNflTeamAsync(CreateNflTeamDto dto)
         {
+            // Validar datos y archivo
+            var (isValid, error) = await NflTeamValidator.ValidateCreateNflTeamAsync(dto, _repository);
+            if (!isValid)
+                return (false, error, null);
 
-            // Validar nombre único
-            if (await _context.NflTeams.AnyAsync(t => t.Name == name))
-                return (false, AppConstants.ErrorNflTeamNameExists, null);
+            // Guardar imagen y thumbnail
+            var (imageFileName, thumbnailFileName, imageError) = await SaveImageAndThumbnailAsync(dto.Image);
+            if (imageError != null)
+                return (false, imageError, null);
 
-            // Validar campos obligatorios
-            if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(city) || string.IsNullOrWhiteSpace(imageFileName) || string.IsNullOrWhiteSpace(thumbnailFileName))
-                return (false, AppConstants.ErrorMissingNflTeamFields, null);
-
-            // Crear el equipo NFL
             var team = new NflTeam
             {
-                Name = name,
-                City = city,
-                Image = imageFileName,
-                Thumbnail = thumbnailFileName,
+                Name = dto.Name,
+                City = dto.City,
+                Image = imageFileName!,
+                Thumbnail = thumbnailFileName!,
                 CreatedAt = DateTime.UtcNow,
                 IsActive = true
             };
 
-            // Guardar en la base de datos
-            _context.NflTeams.Add(team);
-            await _context.SaveChangesAsync();
-            return (true, null, team);
+            try
+            {
+                await _repository.AddNflTeamAsync(team);
+                return (true, null, team);
+            }
+            catch
+            {
+                // Si falla, elimina archivos huérfanos
+                DeleteFileIfExists(imageFileName);
+                DeleteFileIfExists(thumbnailFileName);
+                return (false, "Error al guardar en base de datos.", null);
+            }
+        }
+
+        private async Task<(string? imageFileName, string? thumbnailFileName, string? error)> SaveImageAndThumbnailAsync(Microsoft.AspNetCore.Http.IFormFile image)
+        {
+            try
+            {
+                var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), AppConstants.NflTeamsImageFolder.Replace("/", Path.DirectorySeparatorChar.ToString()));
+                Directory.CreateDirectory(uploadsFolder);
+
+                var imageFileName = $"{Guid.NewGuid()}_{image.FileName}";
+                var imagePath = Path.Combine(uploadsFolder, imageFileName);
+
+                using (var stream = new FileStream(imagePath, FileMode.Create))
+                {
+                    await image.CopyToAsync(stream);
+                }
+
+                // Generar thumbnail
+                var thumbnailFileName = $"thumb_{Guid.NewGuid()}.png";
+                var thumbnailPath = Path.Combine(uploadsFolder, thumbnailFileName);
+
+                using (var img = SixLabors.ImageSharp.Image.Load(imagePath))
+                {
+                    img.Mutate(x => x.Resize(100, 100));
+                    img.Save(thumbnailPath, new SixLabors.ImageSharp.Formats.Png.PngEncoder());
+                }
+
+                return (imageFileName, thumbnailFileName, null);
+            }
+            catch
+            {
+                return (null, null, "Error al guardar la imagen o el thumbnail.");
+            }
+        }
+
+        private void DeleteFileIfExists(string? fileName)
+        {
+            if (string.IsNullOrWhiteSpace(fileName)) return;
+            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), AppConstants.NflTeamsImageFolder.Replace("/", Path.DirectorySeparatorChar.ToString()));
+            var filePath = Path.Combine(uploadsFolder, fileName);
+            if (System.IO.File.Exists(filePath))
+            {
+                try { System.IO.File.Delete(filePath); } catch { }
+            }
         }
 
 

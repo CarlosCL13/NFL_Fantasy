@@ -1,22 +1,37 @@
-<h2>Buscar ligas por temporada</h2>
+<h2>Buscar ligas</h2>
 
-<!-- Selección de temporada -->
-<div class="mb-3">
-  <label for="seasonSelect"><strong>Seleccionar temporada:</strong></label>
-  <select
-    id="seasonSelect"
-    class="form-select"
-    [(ngModel)]="selectedSeasonId"
-    (change)="onSelectSeason()"
-  >
-    <option value="" disabled selected>-- Selecciona una --</option>
-    <option *ngFor="let s of seasons" [value]="s.seasonId">{{ s.name }}</option>
-  </select>
+<!-- Filtros -->
+<div class="row mb-3">
+  <div class="col-md-6">
+    <label><strong>Nombre de liga:</strong></label>
+    <input
+      type="text"
+      class="form-control"
+      placeholder="Ej. SuperLiga 2025"
+      [(ngModel)]="searchName"
+    />
+  </div>
+  <div class="col-md-4 d-flex align-items-end">
+    <div class="form-check">
+      <input
+        class="form-check-input"
+        type="checkbox"
+        id="activeCheck"
+        [(ngModel)]="showOnlyActive"
+      />
+      <label class="form-check-label" for="activeCheck">Mostrar solo activas</label>
+    </div>
+  </div>
+  <div class="col-md-2 d-flex align-items-end">
+    <button class="btn btn-primary w-100" (click)="searchLeagues()" [disabled]="loading">
+      {{ loading ? 'Buscando...' : 'Buscar' }}
+    </button>
+  </div>
 </div>
 
-<!-- Listado de ligas -->
+<!-- Resultados -->
 <div *ngIf="leagues.length > 0" class="mt-4">
-  <h3>Ligas disponibles</h3>
+  <h3>Ligas encontradas</h3>
   <ul class="list-group">
     <li
       *ngFor="let l of leagues"
@@ -25,12 +40,17 @@
       <div>
         <strong>{{ l.name }}</strong> — Activa: {{ l.isActive ? 'Sí' : 'No' }}
       </div>
-      <button class="btn btn-primary btn-sm" (click)="selectLeague(l.leagueId!)">Unirme</button>
+      <button class="btn btn-sm btn-success" (click)="selectLeague(l.leagueId!)">Unirme</button>
     </li>
   </ul>
 </div>
 
-<!-- Formulario para unirse -->
+<!-- Mensaje si no hay resultados -->
+<div *ngIf="hasSearched && leagues.length === 0 && !loading" class="text-muted mt-3">
+  No se encontraron ligas con los filtros aplicados.
+</div>
+
+<!-- Formulario de unión -->
 <div *ngIf="joinForm.leagueId" class="mt-4">
   <h4>Unirse a la liga seleccionada</h4>
 

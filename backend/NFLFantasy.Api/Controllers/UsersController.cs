@@ -39,44 +39,8 @@ namespace NFLFantasy.Api.Controllers
                 return BadRequest(new { error = AppConstants.ErrorInvalidRegisterData, detalles = errors });
             }
 
-            // Guardar imagen de perfil si se proporciona
-            string? profileImageFileName = null;
-
-            // Validar y guardar la imagen de perfil
-            if (dto.ProfileImage != null && dto.ProfileImage.Length > 0)
-            {
-                // Obtiene la extensión del archivo
-                var extension = Path.GetExtension(dto.ProfileImage.FileName).ToLowerInvariant();
-
-                // Valida la extensión del archivo
-                if (!AppConstants.AllowedImageExtensions.Contains(extension))
-                    return BadRequest(new { error = AppConstants.ErrorProfileImageFormat });
-
-                // Valida el tamaño del archivo
-                if (dto.ProfileImage.Length > AppConstants.MaxImageFileSize)
-                    return BadRequest(new { error = AppConstants.ErrorProfileImageTooLarge });
-
-                // Asegura que la carpeta exista
-                var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), AppConstants.UsersImageFolder.Replace("/", Path.DirectorySeparatorChar.ToString()));
-
-                //Crea la carpeta si no existe
-                Directory.CreateDirectory(uploadsFolder);
-
-                //Nombre único para evitar colisiones
-                profileImageFileName = $"{Guid.NewGuid()}_{dto.ProfileImage.FileName}";
-
-                // Ruta completa del archivo
-                var filePath = Path.Combine(uploadsFolder, profileImageFileName);
-
-                // Guarda el archivo en disco 
-                using (var stream = new FileStream(filePath, FileMode.Create))
-                {
-                    await dto.ProfileImage.CopyToAsync(stream);
-                }
-            }
-
             // Llama al servicio para registrar el usuario
-            var (success, error, user) = await _userService.RegisterAsync(dto, profileImageFileName);
+            var (success, error, user) = await _userService.RegisterAsync(dto);
 
             // Verifica si hubo un error en el registro
             if (!success)
@@ -103,7 +67,7 @@ namespace NFLFantasy.Api.Controllers
             if (!success)
                 return BadRequest(new { error = error ?? "No se pudo iniciar sesión. Por favor, verifica tus credenciales e inténtalo de nuevo." });
 
-            // Devuelve respuesta exitosa con el token JWT
+            // Devuelve respuesta exitosa con el token JWT y el rol
             return Ok(new
             {
                 message = "Inicio de sesión exitoso.",
@@ -112,8 +76,8 @@ namespace NFLFantasy.Api.Controllers
                     name = user.Name,
                     email = user.Email,
                     alias = user.Alias,
-                    profileImage = user.ProfileImage
-                    // Agrega aquí otros campos públicos si los necesitas
+                    profileImage = user.ProfileImage,
+                    role = user.Role != null ? user.Role.Name : null
                 },
                 token
             });

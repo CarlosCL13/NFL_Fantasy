@@ -74,10 +74,10 @@ namespace NFLFantasy.Api.Controllers
         }
 
         /// <summary>
-        /// Crea una nueva liga y asigna al usuario como comisionado principal.
+        /// Crea una nueva liga y asigna al usuario como comisionado principal (administrador o manager).
         /// </summary>
         [HttpPost]
-        [Authorize(Roles = "admin")]
+        [Authorize(Roles = "admin,manager")]
         public async Task<IActionResult> Create([FromBody] CreateLeagueDto dto)
         {
             // Obtiene el userId real del usuario autenticado desde el token JWT, con validación

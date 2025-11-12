@@ -3,11 +3,29 @@
   <form [formGroup]="form" (ngSubmit)="submit()">
     <div class="mb-3">
       <label>Email</label>
-      <input class="form-control" formControlName="email" />
+      <input 
+        class="form-control" 
+        [class.is-invalid]="form.get('email')?.invalid && form.get('email')?.touched"
+        formControlName="email" 
+      />
+      <div class="invalid-feedback" *ngIf="form.get('email')?.hasError('required') && form.get('email')?.touched">
+        El email es requerido
+      </div>
+      <div class="invalid-feedback" *ngIf="form.get('email')?.hasError('email') && form.get('email')?.touched">
+        El email no es válido
+      </div>
     </div>
     <div class="mb-3">
       <label>Contraseña</label>
-      <input class="form-control" type="password" formControlName="password" />
+      <input 
+        class="form-control" 
+        [class.is-invalid]="form.get('password')?.invalid && form.get('password')?.touched"
+        type="password" 
+        formControlName="password" 
+      />
+      <div class="invalid-feedback" *ngIf="form.get('password')?.hasError('required') && form.get('password')?.touched">
+        La contraseña es requerida
+      </div>
     </div>
     <button class="btn btn-primary" type="submit">Entrar</button>
     <a class="btn btn-link" routerLink="/register">Crear cuenta</a>

@@ -3,7 +3,14 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
+import { ErrorHandlerService } from '../../../core/services/error-handler.service';
+import { PasswordValidators } from '../../../shared/validators/password.validators';
 
+/**
+ * Componente de registro de usuarios
+ * Refactorizado para usar ErrorHandlerService y validadores reutilizables
+ * Cumple con Single Responsibility Principle
+ */
 @Component({
   selector: 'app-register',
   standalone: true,
@@ -13,20 +20,23 @@ import { AuthService } from '../../../core/services/auth.service';
 })
 export class RegisterComponent {
   file?: File;
+  form: any;
 
-  form: any; // declaras sin inicializar
-
-  constructor(private fb: FormBuilder, private auth: AuthService, private router: Router) {}
+  constructor(
+    private fb: FormBuilder,
+    private auth: AuthService,
+    private router: Router,
+    private errorHandler: ErrorHandlerService
+  ) {}
 
   ngOnInit() {
-    // ahora sí: fb ya está inicializado
     this.form = this.fb.group({
       name: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
       alias: ['', Validators.required],
       password: ['', [Validators.required, Validators.minLength(6)]],
       confirmPassword: ['', Validators.required],
-    });
+    }, { validators: PasswordValidators.matchPassword('password', 'confirmPassword') });
   }
 
   onFileChange(event: any) {
@@ -34,9 +44,39 @@ export class RegisterComponent {
   }
 
   submit() {
-    if (this.form.invalid) return;
-    if (this.form.value.password !== this.form.value.confirmPassword) {
-      alert('Las contraseñas no coinciden');
+    if (this.form.invalid) {
+      // Marcar todos los campos como tocados para mostrar los errores
+      this.form.markAllAsTouched();
+      
+      // Generar mensaje de error específico
+      let errorMessage = 'Por favor, corrija los siguientes errores:\n';
+      
+      if (this.form.get('name')?.hasError('required')) {
+        errorMessage += '- El nombre es requerido\n';
+      }
+      if (this.form.get('email')?.hasError('required')) {
+        errorMessage += '- El email es requerido\n';
+      }
+      if (this.form.get('email')?.hasError('email')) {
+        errorMessage += '- El email no es válido\n';
+      }
+      if (this.form.get('alias')?.hasError('required')) {
+        errorMessage += '- El alias es requerido\n';
+      }
+      if (this.form.get('password')?.hasError('required')) {
+        errorMessage += '- La contraseña es requerida\n';
+      }
+      if (this.form.get('password')?.hasError('minlength')) {
+        errorMessage += '- La contraseña debe tener al menos 6 caracteres\n';
+      }
+      if (this.form.get('confirmPassword')?.hasError('required')) {
+        errorMessage += '- La confirmación de contraseña es requerida\n';
+      }
+      if (this.form.get('confirmPassword')?.hasError('passwordMismatch')) {
+        errorMessage += '- Las contraseñas no coinciden\n';
+      }
+      
+      alert(errorMessage);
       return;
     }
 
@@ -55,15 +95,8 @@ export class RegisterComponent {
         this.router.navigate(['/login']);
       },
       error: (err) => {
-        console.error('Error del backend:', err);
-
-        if (err.error && typeof err.error === 'object') {
-          alert(`❌ ${err.error.error || 'Error en el registro'}`);
-        } else if (typeof err.error === 'string') {
-          alert(`❌ ${err.error}`);
-        } else {
-          alert('❌ Error en el registro');
-        }
+        const errorMessage = this.errorHandler.handleError(err, 'registro');
+        alert(errorMessage);
       },
     });
   }

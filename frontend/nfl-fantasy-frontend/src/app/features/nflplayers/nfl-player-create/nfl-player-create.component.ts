@@ -4,7 +4,12 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { NflPlayerService } from '../../../core/services/nflplayer.service';
 import { NflTeamService } from '../../../core/services/nflteam.service';
+import { ErrorHandlerService } from '../../../core/services/error-handler.service';
 
+/**
+ * Componente para crear jugadores NFL
+ * Refactorizado para usar ErrorHandlerService
+ */
 @Component({
   selector: 'app-nfl-player-create',
   standalone: true,
@@ -26,7 +31,8 @@ export class NflPlayerCreateComponent implements OnInit {
     private fb: FormBuilder,
     private playerService: NflPlayerService,
     private teamService: NflTeamService,
-    private router: Router
+    private router: Router,
+    private errorHandler: ErrorHandlerService
   ) {
     this.form = this.fb.group({
       name: ['', Validators.required],
@@ -44,14 +50,20 @@ export class NflPlayerCreateComponent implements OnInit {
   loadPositions(): void {
     this.playerService.getPositions().subscribe({
       next: (data) => (this.positions = data),
-      error: () => alert('Error cargando posiciones.'),
+      error: (err) => {
+        const errorMessage = this.errorHandler.handleError(err, 'carga de posiciones');
+        alert(errorMessage);
+      },
     });
   }
 
   loadTeams(): void {
     this.teamService.getTeams().subscribe({
       next: (data) => (this.teams = data),
-      error: () => alert('Error cargando equipos NFL.'),
+      error: (err) => {
+        const errorMessage = this.errorHandler.handleError(err, 'carga de equipos NFL');
+        alert(errorMessage);
+      },
     });
   }
 
@@ -65,7 +77,24 @@ export class NflPlayerCreateComponent implements OnInit {
 
   submit(): void {
     if (this.form.invalid) {
-      alert('⚠️ Debes completar todos los campos obligatorios.');
+      this.form.markAllAsTouched();
+      
+      let errorMessage = 'Por favor, corrija los siguientes errores:\n';
+      
+      if (this.form.get('name')?.hasError('required')) {
+        errorMessage += '- El nombre del jugador es requerido\n';
+      }
+      if (this.form.get('positionId')?.hasError('required')) {
+        errorMessage += '- Debe seleccionar una posición\n';
+      }
+      if (this.form.get('nflTeamId')?.hasError('required')) {
+        errorMessage += '- Debe seleccionar un equipo NFL\n';
+      }
+      if (this.form.get('image')?.hasError('required')) {
+        errorMessage += '- Debe seleccionar una imagen del jugador\n';
+      }
+      
+      alert(errorMessage);
       return;
     }
 
@@ -81,12 +110,8 @@ export class NflPlayerCreateComponent implements OnInit {
         this.router.navigate(['/dashboard']);
       },
       error: (err) => {
-        console.error(err);
-        if (err.error?.error) {
-          alert('❌ ' + err.error.error);
-        } else {
-          alert('❌ Error creando jugador.');
-        }
+        const errorMessage = this.errorHandler.handleError(err, 'creación de jugador');
+        alert(errorMessage);
       },
     });
   }
@@ -109,11 +134,13 @@ export class NflPlayerCreateComponent implements OnInit {
         this.bulkError = '';
       },
       error: (err) => {
-        console.error('Error al subir archivo JSON:', err);
-        this.bulkError =
-          err.error?.errors?.join('\n') ||
-          err.error?.error ||
-          '❌ Error procesando el archivo JSON.';
+        // Para bulk upload, mostramos el error específico del JSON
+        if (err.error?.errors) {
+          this.bulkError = err.error.errors.join('\n');
+        } else {
+          const errorMessage = this.errorHandler.handleError(err, 'carga masiva de jugadores');
+          this.bulkError = errorMessage;
+        }
         this.bulkMessage = '';
       },
     });

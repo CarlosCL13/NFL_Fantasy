@@ -11,7 +11,6 @@
     <!-- Solo Admin -->
     <div
       class="card action-card"
-      *ngIf="authService.getUserRole() === 'admin'"
       (click)="navigateTo('/leagues/create')"
     >
       <div class="card-icon">🏆</div>
@@ -46,6 +45,13 @@
       <div class="card-icon">📅</div>
       <h3>Crear Temporada</h3>
       <p>Administra las temporadas del sistema (Solo administradores)</p>
+    </div>
+
+    <!-- Todos los autenticados -->
+    <div class="card action-card" (click)="navigateTo('/leagues/search')">
+      <div class="card-icon">🔍</div>
+      <h3>Buscar Liga</h3>
+      <p>Busca y únete a una liga existente</p>
     </div>
   </div>
 </div>

@@ -61,7 +61,7 @@ export class TeamCreateComponent {
 
     this.teamService.createTeam(fd).subscribe({
       next: () => {
-        alert('✅ Equipo creado exitosamente');
+        alert('Equipo creado exitosamente');
         this.router.navigate(['/']);
       },
       error: (err) => {

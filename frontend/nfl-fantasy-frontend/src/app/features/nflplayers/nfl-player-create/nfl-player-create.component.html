@@ -5,63 +5,32 @@
   <form [formGroup]="form" (ngSubmit)="submit()">
     <div class="mb-3">
       <label class="form-label">Nombre *</label>
-      <input 
-        type="text" 
-        class="form-control" 
-        [class.is-invalid]="form.get('name')?.invalid && form.get('name')?.touched"
-        formControlName="name" 
-      />
-      <div class="invalid-feedback" *ngIf="form.get('name')?.hasError('required') && form.get('name')?.touched">
-        El nombre del jugador es requerido
-      </div>
+      <input type="text" class="form-control" formControlName="name" />
     </div>
 
     <div class="mb-3">
       <label class="form-label">Posición *</label>
-      <select 
-        class="form-select" 
-        [class.is-invalid]="form.get('positionId')?.invalid && form.get('positionId')?.touched"
-        formControlName="positionId"
-      >
+      <select class="form-select" formControlName="positionId">
         <option value="">Seleccione posición</option>
         <option *ngFor="let pos of positions" [value]="pos.positionId">
           {{ pos.name }}
         </option>
       </select>
-      <div class="invalid-feedback" *ngIf="form.get('positionId')?.hasError('required') && form.get('positionId')?.touched">
-        Debe seleccionar una posición
-      </div>
     </div>
 
     <div class="mb-3">
       <label class="form-label">Equipo NFL *</label>
-      <select 
-        class="form-select" 
-        [class.is-invalid]="form.get('nflTeamId')?.invalid && form.get('nflTeamId')?.touched"
-        formControlName="nflTeamId"
-      >
+      <select class="form-select" formControlName="nflTeamId">
         <option value="">Seleccione equipo</option>
         <option *ngFor="let team of teams" [value]="team.nflTeamId">
           {{ team.name }}
         </option>
       </select>
-      <div class="invalid-feedback" *ngIf="form.get('nflTeamId')?.hasError('required') && form.get('nflTeamId')?.touched">
-        Debe seleccionar un equipo NFL
-      </div>
     </div>
 
     <div class="mb-3">
       <label class="form-label">Imagen *</label>
-      <input 
-        type="file" 
-        class="form-control" 
-        [class.is-invalid]="form.get('image')?.invalid && form.get('image')?.touched"
-        accept="image/*" 
-        (change)="onFileChange($event)" 
-      />
-      <div class="invalid-feedback" *ngIf="form.get('image')?.hasError('required') && form.get('image')?.touched">
-        Debe seleccionar una imagen para el jugador
-      </div>
+      <input type="file" class="form-control" accept="image/*" (change)="onFileChange($event)" />
     </div>
 
     <button class="btn btn-primary me-3" type="submit">Crear Jugador</button>

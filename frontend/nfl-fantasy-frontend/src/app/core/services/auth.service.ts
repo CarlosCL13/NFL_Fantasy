@@ -7,7 +7,6 @@ import { TokenStorageService } from './token-storage.service';
 
 /**
  * Interface que define el contrato para el servicio de autenticación
- * Cumple con Interface Segregation Principle (ISP)
  */
 export interface IAuthService {
   register(formData: FormData): Observable<any>;
@@ -21,8 +20,8 @@ export interface IAuthService {
 /**
  * Servicio responsable únicamente de la lógica de autenticación
  * Cumple con Single Responsibility Principle (SRP)
- * Delega el almacenamiento a TokenStorageService (Dependency Inversion Principle)
- * NO maneja navegación (se delega a los componentes)
+ * Delega el almacenamiento a TokenStorageService 
+ * ya NO maneja navegación (se delega a los componentes)
  */
 @Injectable({ providedIn: 'root' })
 export class AuthService implements IAuthService {

@@ -5,8 +5,6 @@ import { AuthService } from '../../core/services/auth.service';
 
 /**
  * Componente de dashboard principal
- * Ahora maneja la navegación después del logout localmente
- * Cumple con Single Responsibility Principle
  */
 @Component({
   selector: 'app-dashboard',

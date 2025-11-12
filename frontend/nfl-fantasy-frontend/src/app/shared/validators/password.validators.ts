@@ -2,7 +2,6 @@ import { AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
 
 /**
  * Validadores personalizados para contraseñas
- * Cumple con Single Responsibility Principle (SRP)
  * Reutilizable en múltiples componentes
  */
 export class PasswordValidators {

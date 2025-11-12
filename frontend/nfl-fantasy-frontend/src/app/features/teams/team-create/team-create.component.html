@@ -3,25 +3,11 @@
   <form [formGroup]="form" (ngSubmit)="submit()">
     <div class="mb-3">
       <label>Nombre</label>
-      <input 
-        class="form-control" 
-        [class.is-invalid]="form.get('name')?.invalid && form.get('name')?.touched"
-        formControlName="name" 
-      />
-      <div class="invalid-feedback" *ngIf="form.get('name')?.hasError('required') && form.get('name')?.touched">
-        El nombre del equipo es requerido
-      </div>
+      <input class="form-control" formControlName="name" />
     </div>
     <div class="mb-3">
       <label>Ciudad</label>
-      <input 
-        class="form-control" 
-        [class.is-invalid]="form.get('city')?.invalid && form.get('city')?.touched"
-        formControlName="city" 
-      />
-      <div class="invalid-feedback" *ngIf="form.get('city')?.hasError('required') && form.get('city')?.touched">
-        La ciudad del equipo es requerida
-      </div>
+      <input class="form-control" formControlName="city" />
     </div>
     <div class="mb-3">
       <label>Imagen</label>

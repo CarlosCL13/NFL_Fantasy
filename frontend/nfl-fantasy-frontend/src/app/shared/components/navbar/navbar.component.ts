@@ -6,7 +6,6 @@ import { AuthService } from '../../../core/services/auth.service';
 /**
  * Componente de barra de navegación
  * Refactorizado para manejar navegación localmente
- * Cumple con Single Responsibility Principle
  */
 @Component({
   selector: 'app-navbar',

@@ -30,19 +30,19 @@ class ValidationErrorHandler implements IErrorHandler {
   handle(error: HttpErrorResponse): string {
     if (error.error && typeof error.error === 'object') {
       const backendError = error.error.error || error.error.message;
-      
+
       // Buscar coincidencia en mensajes conocidos
       for (const [key, message] of Object.entries(this.errorMessages)) {
         if (backendError?.includes(key)) {
           return message;
         }
       }
-      
+
       return `Error de validación: ${backendError}`;
     } else if (typeof error.error === 'string') {
       return `Error de validación: ${error.error}`;
     }
-    
+
     return 'Los datos ingresados no son válidos. Por favor, revise todos los campos y corrija los errores.';
   }
 }
@@ -144,10 +144,10 @@ export class ErrorHandlerService {
   handleError(error: HttpErrorResponse, context?: string): string {
     const handler = this.errorHandlers.find(h => h.canHandle(error));
     const message = handler ? handler.handle(error) : 'Error desconocido';
-    
+
     // Log del error para debugging
     console.error(`Error${context ? ` en ${context}` : ''}:`, error);
-    
+
     return message;
   }
 

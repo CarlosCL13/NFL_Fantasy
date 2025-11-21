@@ -14,7 +14,7 @@ namespace NFLFantasy.Api.Validators
             _context = context;
         }
 
-        public (bool IsValid, string? Error) ValidateCreate(NflPlayerCreateDto dto, NflPlayerRepository repository, bool requireImage = true)
+        public (bool IsValid, string? Error) ValidateCreate(NflPlayerCreateDto dto, INflPlayerRepository repository, bool requireImage = true)
         {
             // Validar campos requeridos (ya lo hace el modelo, pero por si acaso)
             if (string.IsNullOrWhiteSpace(dto.Name) || dto.PositionId <= 0 || (requireImage && dto.Image == null))

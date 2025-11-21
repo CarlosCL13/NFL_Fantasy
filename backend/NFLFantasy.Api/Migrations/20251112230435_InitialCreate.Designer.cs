@@ -12,8 +12,8 @@ using NFLFantasy.Api.Data;
 namespace NFLFantasy.Api.Migrations
 {
     [DbContext(typeof(FantasyContext))]
-    [Migration("20251106002237_AddAbbreviationAndScoringFields")]
-    partial class AddAbbreviationAndScoringFields
+    [Migration("20251112230435_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -120,6 +120,9 @@ namespace NFLFantasy.Api.Migrations
                     b.Property<int>("PlayoffType")
                         .HasColumnType("int");
 
+                    b.Property<int>("RemainingSpots")
+                        .HasColumnType("int");
+
                     b.Property<int>("SeasonId")
                         .HasColumnType("int");
 
@@ -163,6 +166,50 @@ namespace NFLFantasy.Api.Migrations
                     b.HasKey("LeagueAuditId");
 
                     b.ToTable("LeagueAudits");
+                });
+
+            modelBuilder.Entity("NFLFantasy.Api.Models.NflPlayer", b =>
+                {
+                    b.Property<int>("NflPlayerId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("NflPlayerId"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ImageUrl")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("NflTeamId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PositionId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ThumbnailUrl")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("NflPlayerId");
+
+                    b.HasIndex("NflTeamId");
+
+                    b.HasIndex("PositionId");
+
+                    b.ToTable("NflPlayers");
                 });
 
             modelBuilder.Entity("NFLFantasy.Api.Models.NflTeam", b =>
@@ -261,9 +308,6 @@ namespace NFLFantasy.Api.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Formula")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Name")
@@ -498,6 +542,25 @@ namespace NFLFantasy.Api.Migrations
                     b.Navigation("Commissioner");
 
                     b.Navigation("Season");
+                });
+
+            modelBuilder.Entity("NFLFantasy.Api.Models.NflPlayer", b =>
+                {
+                    b.HasOne("NFLFantasy.Api.Models.NflTeam", "NflTeam")
+                        .WithMany()
+                        .HasForeignKey("NflTeamId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("NFLFantasy.Api.Models.Position", "Position")
+                        .WithMany()
+                        .HasForeignKey("PositionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("NflTeam");
+
+                    b.Navigation("Position");
                 });
 
             modelBuilder.Entity("NFLFantasy.Api.Models.Team", b =>

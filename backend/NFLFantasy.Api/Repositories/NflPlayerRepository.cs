@@ -4,14 +4,21 @@ using NFLFantasy.Api.Models;
 
 namespace NFLFantasy.Api.Repositories
 {
-    public class NflPlayerRepository
+    public interface INflPlayerRepository
+    {
+        Task AddAsync(NflPlayer player);
+        bool NflTeamExists(int nflTeamId);
+        bool PositionExists(int positionId);
+        bool PlayerExists(string name, int nflTeamId);
+    }
+    public class NflPlayerRepository : INflPlayerRepository
     {
         private readonly FantasyContext _context;
         public NflPlayerRepository(FantasyContext context)
         {
             _context = context;
         }
-        
+
         // Método para agregar un nuevo jugador NFL
         public async Task AddAsync(NflPlayer player)
         {
@@ -24,7 +31,7 @@ namespace NFLFantasy.Api.Repositories
         {
             return _context.NflTeams.Any(t => t.NflTeamId == nflTeamId);
         }
-        
+
         // Método para validar existencia de posición
         public bool PositionExists(int positionId)
         {
@@ -37,4 +44,27 @@ namespace NFLFantasy.Api.Repositories
             return _context.NflPlayers.Any(p => p.Name == name && p.NflTeamId == nflTeamId);
         }
     }
+
+    public class Demo:INflPlayerRepository{
+        public Task AddAsync(NflPlayer player)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool NflTeamExists(int nflTeamId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool PositionExists(int positionId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool PlayerExists(string name, int nflTeamId)
+        {
+            throw new NotImplementedException();
+        }
+    }
 }
+

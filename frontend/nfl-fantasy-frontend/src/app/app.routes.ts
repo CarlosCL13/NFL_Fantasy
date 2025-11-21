@@ -26,8 +26,7 @@ export const routes: Routes = [
   {
     path: 'leagues/create',
     component: LeagueCreateComponent,
-    canActivate: [AuthGuard, RoleGuard],
-    data: { role: 'admin' },
+    canActivate: [AuthGuard],
   },
   {
     path: 'players/create',

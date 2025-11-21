@@ -46,6 +46,21 @@ namespace NFLFantasy.Api.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Positions",
+                columns: table => new
+                {
+                    PositionId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Abbreviation = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Positions", x => x.PositionId);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Roles",
                 columns: table => new
                 {
@@ -57,6 +72,23 @@ namespace NFLFantasy.Api.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Roles", x => x.RoleId);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Scorings",
+                columns: table => new
+                {
+                    ScoringId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Abbreviation = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Points = table.Column<double>(type: "float", nullable: false),
+                    Unit = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Description = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Scorings", x => x.ScoringId);
                 });
 
             migrationBuilder.CreateTable(
@@ -75,6 +107,37 @@ namespace NFLFantasy.Api.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Seasons", x => x.SeasonId);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "NflPlayers",
+                columns: table => new
+                {
+                    NflPlayerId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    PositionId = table.Column<int>(type: "int", nullable: false),
+                    NflTeamId = table.Column<int>(type: "int", nullable: false),
+                    ImageUrl = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    ThumbnailUrl = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_NflPlayers", x => x.NflPlayerId);
+                    table.ForeignKey(
+                        name: "FK_NflPlayers_NflTeams_NflTeamId",
+                        column: x => x.NflTeamId,
+                        principalTable: "NflTeams",
+                        principalColumn: "NflTeamId",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_NflPlayers_Positions_PositionId",
+                        column: x => x.PositionId,
+                        principalTable: "Positions",
+                        principalColumn: "PositionId",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -143,10 +206,9 @@ namespace NFLFantasy.Api.Migrations
                     Status = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     SeasonId = table.Column<int>(type: "int", nullable: false),
                     CommissionerId = table.Column<int>(type: "int", nullable: false),
+                    RemainingSpots = table.Column<int>(type: "int", nullable: false),
                     PlayoffType = table.Column<int>(type: "int", nullable: false),
                     AllowDecimalPoints = table.Column<bool>(type: "bit", nullable: false),
-                    DefaultPositions = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    DefaultScoring = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     TradeDeadlineActive = table.Column<bool>(type: "bit", nullable: false),
                     MaxTradesPerTeam = table.Column<int>(type: "int", nullable: true),
                     MaxFreeAgentsPerTeam = table.Column<int>(type: "int", nullable: true)
@@ -165,6 +227,60 @@ namespace NFLFantasy.Api.Migrations
                         column: x => x.CommissionerId,
                         principalTable: "Users",
                         principalColumn: "UserId",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "DefaultPositions",
+                columns: table => new
+                {
+                    DefaultPositionId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    LeagueId = table.Column<int>(type: "int", nullable: false),
+                    PositionId = table.Column<int>(type: "int", nullable: false),
+                    Quantity = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_DefaultPositions", x => x.DefaultPositionId);
+                    table.ForeignKey(
+                        name: "FK_DefaultPositions_Leagues_LeagueId",
+                        column: x => x.LeagueId,
+                        principalTable: "Leagues",
+                        principalColumn: "LeagueId",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_DefaultPositions_Positions_PositionId",
+                        column: x => x.PositionId,
+                        principalTable: "Positions",
+                        principalColumn: "PositionId",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "DefaultScorings",
+                columns: table => new
+                {
+                    DefaultScoringId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    LeagueId = table.Column<int>(type: "int", nullable: false),
+                    ScoringId = table.Column<int>(type: "int", nullable: false),
+                    Value = table.Column<double>(type: "float", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_DefaultScorings", x => x.DefaultScoringId);
+                    table.ForeignKey(
+                        name: "FK_DefaultScorings_Leagues_LeagueId",
+                        column: x => x.LeagueId,
+                        principalTable: "Leagues",
+                        principalColumn: "LeagueId",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_DefaultScorings_Scorings_ScoringId",
+                        column: x => x.ScoringId,
+                        principalTable: "Scorings",
+                        principalColumn: "ScoringId",
                         onDelete: ReferentialAction.Cascade);
                 });
 
@@ -198,6 +314,26 @@ namespace NFLFantasy.Api.Migrations
                 });
 
             migrationBuilder.CreateIndex(
+                name: "IX_DefaultPositions_LeagueId",
+                table: "DefaultPositions",
+                column: "LeagueId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_DefaultPositions_PositionId",
+                table: "DefaultPositions",
+                column: "PositionId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_DefaultScorings_LeagueId",
+                table: "DefaultScorings",
+                column: "LeagueId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_DefaultScorings_ScoringId",
+                table: "DefaultScorings",
+                column: "ScoringId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Leagues_CommissionerId",
                 table: "Leagues",
                 column: "CommissionerId");
@@ -206,6 +342,16 @@ namespace NFLFantasy.Api.Migrations
                 name: "IX_Leagues_SeasonId",
                 table: "Leagues",
                 column: "SeasonId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_NflPlayers_NflTeamId",
+                table: "NflPlayers",
+                column: "NflTeamId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_NflPlayers_PositionId",
+                table: "NflPlayers",
+                column: "PositionId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Teams_LeagueId",
@@ -238,16 +384,31 @@ namespace NFLFantasy.Api.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
+                name: "DefaultPositions");
+
+            migrationBuilder.DropTable(
+                name: "DefaultScorings");
+
+            migrationBuilder.DropTable(
                 name: "LeagueAudits");
 
             migrationBuilder.DropTable(
-                name: "NflTeams");
+                name: "NflPlayers");
 
             migrationBuilder.DropTable(
                 name: "Teams");
 
             migrationBuilder.DropTable(
                 name: "Weeks");
+
+            migrationBuilder.DropTable(
+                name: "Scorings");
+
+            migrationBuilder.DropTable(
+                name: "NflTeams");
+
+            migrationBuilder.DropTable(
+                name: "Positions");
 
             migrationBuilder.DropTable(
                 name: "Leagues");

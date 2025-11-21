@@ -12,9 +12,9 @@ namespace NFLFantasy.Api.Services
 {
     public class NflPlayerService
     {
-        private readonly NflPlayerRepository _repository;
+        private readonly INflPlayerRepository _repository;
         private readonly NflPlayerValidator _validator;
-        public NflPlayerService(NflPlayerRepository repository, NflPlayerValidator validator)
+        public NflPlayerService(INflPlayerRepository repository, NflPlayerValidator validator)
         {
             _repository = repository;
             _validator = validator;

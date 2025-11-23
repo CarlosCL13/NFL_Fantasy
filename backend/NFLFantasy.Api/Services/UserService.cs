@@ -4,6 +4,7 @@ using NFLFantasy.Api.Models;
 using Microsoft.EntityFrameworkCore;
 using NFLFantasy.Api.Utils;
 using NFLFantasy.Api;
+using NFLFantasy.Api.DataAccessLayer.StorageManagement;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
@@ -23,16 +24,20 @@ namespace NFLFantasy.Api.Services
         //Referencia a la configuración de la aplicación
         private readonly IConfiguration _configuration;
 
-        private readonly NFLFantasy.Api.Repositories.UserRepository _repository;
+        private readonly NFLFantasy.Api.DataAccessLayer.Repositories.UserRepository _repository;
+
+        //Referencia al manejador de directorios
+        private readonly DirectoryManager _directoryManager;
 
         /// <summary>
         /// Constructor del servicio UserService.
         /// </summary>
-        public UserService(FantasyContext context, IConfiguration configuration)
+        public UserService(FantasyContext context, IConfiguration configuration, DirectoryManager directoryManager)
         {
             _context = context; //Inicializa el contexto de la base de datos
             _configuration = configuration; //Inicializa la configuración de la aplicación
-            _repository = new NFLFantasy.Api.Repositories.UserRepository(context);
+            _repository = new NFLFantasy.Api.DataAccessLayer.Repositories.UserRepository(context);
+            _directoryManager = directoryManager;
         }
 
         /// <summary>
@@ -182,8 +187,8 @@ namespace NFLFantasy.Api.Services
                 return null;
             }
 
-            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), AppConstants.UsersImageFolder.Replace("/", Path.DirectorySeparatorChar.ToString()));
-            Directory.CreateDirectory(uploadsFolder);
+            var uploadsFolder = _directoryManager.GetUsersImagesPath();
+            _directoryManager.EnsureDirectoryExists(uploadsFolder);
 
             var uniqueFileName = $"{Guid.NewGuid()}_{image.FileName}";
             var filePath = Path.Combine(uploadsFolder, uniqueFileName);

@@ -3,7 +3,7 @@ using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using NFLFantasy.Api.Utils;
 using NFLFantasy.Api.Models;
-using NFLFantasy.Api.Repositories;
+using NFLFantasy.Api.DataAccessLayer.Repositories;
 
 
 namespace NFLFantasy.Api.Validators
@@ -33,7 +33,7 @@ namespace NFLFantasy.Api.Validators
         public static async Task<(bool IsValid, string? Error)> ValidateCreateLeagueAsync(
             NFLFantasy.Api.DTO.CreateLeagueDto dto,
             NFLFantasy.Api.Data.FantasyContext context,
-            NFLFantasy.Api.Repositories.LeagueRepository leagueRepository)
+            NFLFantasy.Api.DataAccessLayer.Repositories.LeagueRepository leagueRepository)
         {
             // Validar nombre de liga
             if (string.IsNullOrWhiteSpace(dto.Name) || dto.Name.Length > 100){

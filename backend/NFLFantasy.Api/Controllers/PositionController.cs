@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using NFLFantasy.Api.Repositories;
+using NFLFantasy.Api.DataAccessLayer.Repositories;
 
 namespace NFLFantasy.Api.Controllers
 {

@@ -2,7 +2,7 @@ using System.Linq;
 using NFLFantasy.Api.DTO;
 using NFLFantasy.Api.Data;
 using NFLFantasy.Api.Models;
-using NFLFantasy.Api.Repositories;
+using NFLFantasy.Api.DataAccessLayer.Repositories;
 
 namespace NFLFantasy.Api.Validators
 {

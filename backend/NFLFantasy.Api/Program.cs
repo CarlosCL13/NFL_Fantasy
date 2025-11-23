@@ -1,5 +1,9 @@
 using NFLFantasy.Api.Services;
 using NFLFantasy.Api.Data;
+using NFLFantasy.Api.DataAccessLayer.Repositories;
+using NFLFantasy.Api.DataAccessLayer.StorageManagement;
+using NFLFantasy.Api.DataAccessLayer.FileManagement;
+using NFLFantasy.Api.Validators;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -52,11 +56,18 @@ builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<NflTeamService>();
 builder.Services.AddScoped<SeasonService>();
 builder.Services.AddScoped<LeagueService>();
-builder.Services.AddScoped<NFLFantasy.Api.Services.NflPlayerService>();
-builder.Services.AddScoped<NFLFantasy.Api.Repositories.INflPlayerRepository, NFLFantasy.Api.Repositories.NflPlayerRepository>();
-builder.Services.AddScoped<NFLFantasy.Api.Validators.NflPlayerValidator>();
-builder.Services.AddScoped<NFLFantasy.Api.Repositories.PositionRepository>();
-builder.Services.AddScoped<NFLFantasy.Api.Services.NflPlayerBulkService>();
+builder.Services.AddScoped<NflPlayerService>();
+builder.Services.AddScoped<NflPlayerBulkService>();
+
+// Registro de servicios de DataAccessLayer
+builder.Services.AddScoped<DirectoryManager>();
+builder.Services.AddScoped<ImageStorageHandler>();
+builder.Services.AddScoped<JsonFileHandler>();
+builder.Services.AddScoped<INflPlayerRepository, NflPlayerRepository>();
+builder.Services.AddScoped<PositionRepository>();
+
+// Registro de validadores
+builder.Services.AddScoped<NflPlayerValidator>();
 
 // Añade controladores MVC
 builder.Services.AddControllers();

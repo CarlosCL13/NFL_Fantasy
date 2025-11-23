@@ -1,5 +1,3 @@
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Processing;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using NFLFantasy.Api.DTO;
@@ -70,42 +68,6 @@ namespace NFLFantasy.Api.Controllers
 
             // Devuelve la lista de equipos NFL
             return Ok(result);
-        }
-        
-        /// <summary>
-        /// Guarda la imagen y el thumbnail en el servidor.
-        /// </summary>
-        private async Task<(string? imageFileName, string? thumbnailFileName, string? error)> SaveImageAndThumbnailAsync(IFormFile image)
-        {
-            try
-            {
-                var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), AppConstants.NflTeamsImageFolder.Replace("/", Path.DirectorySeparatorChar.ToString()));
-                Directory.CreateDirectory(uploadsFolder);
-
-                var imageFileName = $"{Guid.NewGuid()}_{image.FileName}";
-                var imagePath = Path.Combine(uploadsFolder, imageFileName);
-
-                using (var stream = new FileStream(imagePath, FileMode.Create))
-                {
-                    await image.CopyToAsync(stream);
-                }
-
-                // Generar thumbnail
-                var thumbnailFileName = $"thumb_{Guid.NewGuid()}.png";
-                var thumbnailPath = Path.Combine(uploadsFolder, thumbnailFileName);
-
-                using (var img = Image.Load(imagePath))
-                {
-                    img.Mutate(x => x.Resize(100, 100));
-                    img.Save(thumbnailPath);
-                }
-
-                return (imageFileName, thumbnailFileName, null);
-            }
-            catch (Exception)
-            {
-                return (null, null, "Error al guardar la imagen o el thumbnail.");
-            }
         }
     }
 }

@@ -3,7 +3,8 @@ using NFLFantasy.Api.Models;
 using NFLFantasy.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using NFLFantasy.Api;
-using NFLFantasy.Api.Repositories;
+using NFLFantasy.Api.DataAccessLayer.Repositories;
+using NFLFantasy.Api.DataAccessLayer.StorageManagement;
 using NFLFantasy.Api.Validators;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;
@@ -19,15 +20,23 @@ namespace NFLFantasy.Api.Services
         private readonly FantasyContext _context;
 
         //Referencia al repositorio de equipos NFL
-        private readonly NFLFantasy.Api.Repositories.NflTeamRepository _repository;
+        private readonly NFLFantasy.Api.DataAccessLayer.Repositories.NflTeamRepository _repository;
+
+        //Referencia al manejador de directorios
+        private readonly DirectoryManager _directoryManager;
+
+        //Referencia al manejador de imágenes
+        private readonly ImageStorageHandler _imageStorageHandler;
         
         /// <summary>
         /// Constructor del servicio NflTeamService.
         /// </summary>
-        public NflTeamService(FantasyContext context)
+        public NflTeamService(FantasyContext context, DirectoryManager directoryManager, ImageStorageHandler imageStorageHandler)
         {
             _context = context;
-            _repository = new NFLFantasy.Api.Repositories.NflTeamRepository(context);
+            _repository = new NFLFantasy.Api.DataAccessLayer.Repositories.NflTeamRepository(context);
+            _directoryManager = directoryManager;
+            _imageStorageHandler = imageStorageHandler;
         }
 
         /// <summary>
@@ -75,27 +84,8 @@ namespace NFLFantasy.Api.Services
         {
             try
             {
-                var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), AppConstants.NflTeamsImageFolder.Replace("/", Path.DirectorySeparatorChar.ToString()));
-                Directory.CreateDirectory(uploadsFolder);
-
-                var imageFileName = $"{Guid.NewGuid()}_{image.FileName}";
-                var imagePath = Path.Combine(uploadsFolder, imageFileName);
-
-                using (var stream = new FileStream(imagePath, FileMode.Create))
-                {
-                    await image.CopyToAsync(stream);
-                }
-
-                // Generar thumbnail
-                var thumbnailFileName = $"thumb_{Guid.NewGuid()}.png";
-                var thumbnailPath = Path.Combine(uploadsFolder, thumbnailFileName);
-
-                using (var img = SixLabors.ImageSharp.Image.Load(imagePath))
-                {
-                    img.Mutate(x => x.Resize(100, 100));
-                    img.Save(thumbnailPath, new SixLabors.ImageSharp.Formats.Png.PngEncoder());
-                }
-
+                var uploadsFolder = _directoryManager.GetNflTeamsImagesPath();
+                var (imageFileName, thumbnailFileName) = await _imageStorageHandler.ProcessImageAsync(image, uploadsFolder);
                 return (imageFileName, thumbnailFileName, null);
             }
             catch
@@ -107,7 +97,7 @@ namespace NFLFantasy.Api.Services
         private void DeleteFileIfExists(string? fileName)
         {
             if (string.IsNullOrWhiteSpace(fileName)) return;
-            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), AppConstants.NflTeamsImageFolder.Replace("/", Path.DirectorySeparatorChar.ToString()));
+            var uploadsFolder = _directoryManager.GetNflTeamsImagesPath();
             var filePath = Path.Combine(uploadsFolder, fileName);
             if (System.IO.File.Exists(filePath))
             {

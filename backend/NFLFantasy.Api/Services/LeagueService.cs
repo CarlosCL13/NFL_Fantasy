@@ -20,7 +20,7 @@ namespace NFLFantasy.Api.Services
         private readonly FantasyContext _context;
 
         // Referencia al repositorio de ligas
-        private readonly NFLFantasy.Api.Repositories.LeagueRepository _leagueRepository;
+        private readonly NFLFantasy.Api.DataAccessLayer.Repositories.LeagueRepository _leagueRepository;
 
         /// <summary>
         /// Constructor del servicio LeagueService.
@@ -28,7 +28,7 @@ namespace NFLFantasy.Api.Services
         public LeagueService(FantasyContext context)
         {
             _context = context;
-            _leagueRepository = new NFLFantasy.Api.Repositories.LeagueRepository(context);
+            _leagueRepository = new NFLFantasy.Api.DataAccessLayer.Repositories.LeagueRepository(context);
         }
 
         /// <summary>

@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using NFLFantasy.Api.Data;
 using NFLFantasy.Api.Models;
 using NFLFantasy.Api.DTO;
-using NFLFantasy.Api.Repositories;
+using NFLFantasy.Api.DataAccessLayer.Repositories;
 
 namespace NFLFantasy.Api.Validators
 {
@@ -15,7 +15,7 @@ namespace NFLFantasy.Api.Validators
         public static async Task<(bool IsValid, string? Error)> ValidateCreateSeasonAsync(
             NFLFantasy.Api.DTO.CreateSeasonDto dto,
             NFLFantasy.Api.Data.FantasyContext context,
-            NFLFantasy.Api.Repositories.SeasonRepository repository)
+            NFLFantasy.Api.DataAccessLayer.Repositories.SeasonRepository repository)
         {
             // Valida que la fecha de fin sea posterior a la de inicio
             if (dto.EndDate <= dto.StartDate)

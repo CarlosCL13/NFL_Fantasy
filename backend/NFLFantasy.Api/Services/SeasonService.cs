@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using NFLFantasy.Api.Data;
 using NFLFantasy.Api.DTO;
 using NFLFantasy.Api.Models;
-using NFLFantasy.Api.Repositories;
+using NFLFantasy.Api.DataAccessLayer.Repositories;
 
 namespace NFLFantasy.Api.Services
 {
@@ -22,7 +22,7 @@ namespace NFLFantasy.Api.Services
         /// </summary>
         private readonly FantasyContext _context;
 
-        private readonly NFLFantasy.Api.Repositories.SeasonRepository _repository;
+        private readonly NFLFantasy.Api.DataAccessLayer.Repositories.SeasonRepository _repository;
 
         /// <summary>
         /// Constructor del servicio SeasonService.
@@ -30,7 +30,7 @@ namespace NFLFantasy.Api.Services
         public SeasonService(FantasyContext context)
         {
             _context = context;
-            _repository = new NFLFantasy.Api.Repositories.SeasonRepository(context);
+            _repository = new NFLFantasy.Api.DataAccessLayer.Repositories.SeasonRepository(context);
         }
 
         /// <summary>

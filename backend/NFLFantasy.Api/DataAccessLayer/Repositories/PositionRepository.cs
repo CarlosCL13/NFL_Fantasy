@@ -3,7 +3,7 @@ using NFLFantasy.Api.Models;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace NFLFantasy.Api.Repositories
+namespace NFLFantasy.Api.DataAccessLayer.Repositories
 {
     public class PositionRepository
     {

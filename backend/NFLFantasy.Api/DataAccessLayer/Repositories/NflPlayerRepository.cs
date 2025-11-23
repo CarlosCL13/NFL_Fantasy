@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 using NFLFantasy.Api.Data;
 using NFLFantasy.Api.Models;
 
-namespace NFLFantasy.Api.Repositories
+namespace NFLFantasy.Api.DataAccessLayer.Repositories
 {
     public interface INflPlayerRepository
     {
@@ -42,28 +42,6 @@ namespace NFLFantasy.Api.Repositories
         public bool PlayerExists(string name, int nflTeamId)
         {
             return _context.NflPlayers.Any(p => p.Name == name && p.NflTeamId == nflTeamId);
-        }
-    }
-
-    public class Demo:INflPlayerRepository{
-        public Task AddAsync(NflPlayer player)
-        {
-            throw new NotImplementedException();
-        }
-
-        public bool NflTeamExists(int nflTeamId)
-        {
-            throw new NotImplementedException();
-        }
-
-        public bool PositionExists(int positionId)
-        {
-            throw new NotImplementedException();
-        }
-
-        public bool PlayerExists(string name, int nflTeamId)
-        {
-            throw new NotImplementedException();
         }
     }
 }

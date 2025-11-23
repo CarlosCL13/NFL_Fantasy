@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using NFLFantasy.Api.Data;
 using NFLFantasy.Api.Models;
 
-namespace NFLFantasy.Api.Repositories
+namespace NFLFantasy.Api.DataAccessLayer.Repositories
 {
     public class SeasonRepository
     {

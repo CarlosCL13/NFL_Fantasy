@@ -12,7 +12,7 @@ using NFLFantasy.Api.Data;
 namespace NFLFantasy.Api.Migrations
 {
     [DbContext(typeof(FantasyContext))]
-    [Migration("20251112230435_InitialCreate")]
+    [Migration("20251123184329_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />

@@ -1,15 +1,15 @@
 [
   {
-    "Name": "Kyle Van Noy",
-    "PositionId": 7,
-    "NflTeamId": 3,
-    "ImagePath": "C:\\Users\\Carlos CL\\Pictures\\Imagenes de Prueba Diseño\\Kyle Van Noy.png"
+    "Name": "Michael Mayer",
+    "PositionId": 4,
+    "NflTeamId": 4,
+    "ImagePath": "C:\\Users\\Carlos CL\\Pictures\\Imagenes de Prueba Diseño\\Michael Mayer.png"
   },
    {
-    "Name": "Justin Madubuike",
-    "PositionId": 6,
-    "NflTeamId": 3,
-    "ImagePath": "C:\\Users\\Carlos CL\\Pictures\\Imagenes de Prueba Diseño\\Justin Madubuike.png"
+    "Name": "Maurice Jones-Drew",
+    "PositionId": 2,
+    "NflTeamId": 4,
+    "ImagePath": "C:\\Users\\Carlos CL\\Pictures\\Imagenes de Prueba Diseño\\Maurice Jones-Drew.png"
   }
 ]
 

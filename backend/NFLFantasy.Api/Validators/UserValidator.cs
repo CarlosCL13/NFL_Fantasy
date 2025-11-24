@@ -16,13 +16,13 @@ namespace NFLFantasy.Api.Validators
             // Verificar que el correo no exista
             if (await repository.EmailExistsAsync(dto.Email))
             {
-                return (false, "Ya existe un usuario con este correo electrónico.");
+                return (false, AppConstants.ErrorEmailAlreadyRegistered);
             }
 
             // Verificar que el alias no exista
             if (await repository.AliasExistsAsync(dto.Alias))
             {
-                return (false, "Ya existe un usuario con este alias.");
+                return (false, AppConstants.ErrorAliasInUse);
             }
 
             // Validación de campos obligatorios

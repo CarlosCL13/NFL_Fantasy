@@ -58,6 +58,8 @@ builder.Services.AddScoped<SeasonService>();
 builder.Services.AddScoped<LeagueService>();
 builder.Services.AddScoped<NflPlayerService>();
 builder.Services.AddScoped<NflPlayerBulkService>();
+builder.Services.AddScoped<PlayerNewsRepository>();
+builder.Services.AddScoped<PlayerNewsService>();
 
 // Registro de servicios de DataAccessLayer
 builder.Services.AddScoped<DirectoryManager>();

@@ -15,6 +15,33 @@ namespace NFLFantasy.Api
         public const string ErrorNflTeamNameExists = "Ya existe un equipo NFL registrado con el nombre proporcionado. Elige un nombre diferente.";
         public const string ErrorMissingNflTeamFields = "Debes proporcionar nombre, ciudad, imagen y miniatura para crear un equipo NFL.";
 
+        // NflPlayerService
+        public const string ErrorMissingPlayerFields = "Todos los campos son obligatorios.";
+        public const string ErrorNflTeamNotFound = "El equipo NFL seleccionado no existe.";
+        public const string ErrorPlayerAlreadyExists = "Ya existe un jugador con ese nombre en el mismo equipo NFL.";
+        public const string ErrorPositionNotFound = "La posición seleccionada no existe.";
+
+        // LeagueService
+        public const string ErrorInvalidLeagueName = "El nombre de la liga debe tener entre 1 y 100 caracteres.";
+        public const string ErrorLeagueNameExists = "Ya existe una liga con ese nombre.";
+        public const string ErrorInvalidTeamCount = "La cantidad de equipos no es válida.";
+        public const string ErrorInvalidLeaguePassword = "La contraseña no cumple el formato requerido.";
+        public const string ErrorNoActiveSeason = "No hay una temporada actual activa.";
+        public const string ErrorTeamAliasExists = "El alias del equipo ya existe en el sistema. Intente con un nombre de equipo diferente.";
+        public const string ErrorLeagueNotFound = "La liga no existe.";
+        public const string ErrorLeagueInactive = "La liga no está activa.";
+        public const string ErrorIncorrectPassword = "La contraseña es incorrecta.";
+        public const string ErrorLeagueFull = "No hay cupos disponibles en la liga.";
+        public const string ErrorAliasExistsInLeague = "El alias ya existe en la liga. Elige otro.";
+        public const string ErrorTeamNameExistsInLeague = "El nombre de equipo ya existe en la liga. Elige otro.";
+        public const string ErrorUserAlreadyInLeague = "Ya perteneces a esta liga.";
+
+        // SeasonService
+        public const string ErrorInvalidSeasonDates = "La fecha de fin debe ser posterior a la de inicio.";
+        public const string ErrorPastDates = "Las fechas no pueden estar en el pasado.";
+        public const string ErrorSeasonNameExists = "Ya existe una temporada con ese nombre.";
+        public const string ErrorSeasonDateOverlap = "Las fechas se traslapan con otra temporada existente.";
+
         // Imagen
         public static readonly string[] AllowedImageExtensions = new[] { ".jpg", ".jpeg", ".png" };
         public const long MaxImageFileSize = 2 * 1024 * 1024; // 2MB

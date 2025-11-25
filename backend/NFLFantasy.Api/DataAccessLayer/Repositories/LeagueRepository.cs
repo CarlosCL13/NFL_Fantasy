@@ -5,7 +5,18 @@ using NFLFantasy.Api.Models;
 
 namespace NFLFantasy.Api.DataAccessLayer.Repositories
 {
-    public class LeagueRepository
+
+    public interface ILeagueRepository
+    {
+        Task<bool> LeagueNameExistsAsync(string name);
+        Task<Season?> GetCurrentSeasonAsync();
+        Task AddLeagueAsync(League league);
+        Task AddTeamAsync(Team team);
+        Task<bool> AliasExistsAsync(string alias);
+        Task AddAuditAsync(LeagueAudit audit);
+    }
+
+    public class LeagueRepository : ILeagueRepository
     {
         private readonly FantasyContext _context;
         public LeagueRepository(FantasyContext context)

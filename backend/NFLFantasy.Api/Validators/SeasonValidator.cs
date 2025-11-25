@@ -13,9 +13,9 @@ namespace NFLFantasy.Api.Validators
         /// Validaciones centralizadas para la creación de temporada.
         /// </summary>
         public static async Task<(bool IsValid, string? Error)> ValidateCreateSeasonAsync(
-            NFLFantasy.Api.DTO.CreateSeasonDto dto,
-            NFLFantasy.Api.Data.FantasyContext context,
-            NFLFantasy.Api.DataAccessLayer.Repositories.SeasonRepository repository)
+            CreateSeasonDto dto,
+            FantasyContext context,
+            ISeasonRepository repository)
         {
             // Valida que la fecha de fin sea posterior a la de inicio
             if (dto.EndDate <= dto.StartDate)

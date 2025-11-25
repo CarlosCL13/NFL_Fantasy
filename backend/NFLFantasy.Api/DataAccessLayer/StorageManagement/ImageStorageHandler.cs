@@ -7,20 +7,25 @@ namespace NFLFantasy.Api.DataAccessLayer.StorageManagement;
 /// <summary>
 /// Handles image storage operations including saving and thumbnail generation
 /// </summary>
-public class ImageStorageHandler
+public interface IImageStorageHandler
 {
-    private readonly DirectoryManager _directoryManager;
+    Task<(string imageFileName, string thumbnailFileName)> ProcessImageAsync(byte[] imageBytes, string imageName, string uploadsFolder);
+    Task<(string imageFileName, string thumbnailFileName)> ProcessImageAsync(IFormFile imageFile, string uploadsFolder);
+}
 
-    public ImageStorageHandler(DirectoryManager directoryManager)
+public class ImageStorageHandler : IImageStorageHandler
+{
+    private readonly IDirectoryManager _directoryManager;
+
+    public ImageStorageHandler(IDirectoryManager directoryManager)
     {
         _directoryManager = directoryManager;
     }
 
     /// <summary>
-    /// Processes an image from byte array: saves it and generates thumbnail.
-    /// Used for bulk uploads from disk.
+    /// Procesa una imagen desde un byte array: la guarda y genera un thumbnail.
+    /// Usado para cargas masivas (bulk upload).
     /// </summary>
-    /// <returns>Tuple with (imageFileName, thumbnailFileName)</returns>
     public async Task<(string imageFileName, string thumbnailFileName)> ProcessImageAsync(
         byte[] imageBytes, string imageName, string uploadsFolder)
     {
@@ -48,10 +53,9 @@ public class ImageStorageHandler
     }
 
     /// <summary>
-    /// Processes an image from IFormFile: saves it and generates thumbnail.
-    /// Used for HTTP uploads via API.
+    /// Procesa una imagen desde un IFormFile: la guarda y genera un thumbnail.
+    /// Usado para uploads vía API.
     /// </summary>
-    /// <returns>Tuple with (imageFileName, thumbnailFileName)</returns>
     public async Task<(string imageFileName, string thumbnailFileName)> ProcessImageAsync(
         IFormFile imageFile, string uploadsFolder)
     {

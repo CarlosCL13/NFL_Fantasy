@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 using NFLFantasy.Api.DTO;
 using NFLFantasy.Api.Services;
+using Microsoft.AspNetCore.Authorization;
 
 namespace NFLFantasy.Api.Controllers
 {
@@ -15,6 +16,12 @@ namespace NFLFantasy.Api.Controllers
             _service = service;
         }
 
+        /// <summary>
+        /// Agrega una noticia para un jugador NFL (solo administrador).
+        /// </summary>
+        /// <param name="dto"></param>
+        /// <returns></returns>
+        [Authorize(Roles = "admin")]
         [HttpPost]
         public async Task<IActionResult> AddNews([FromBody] CreatePlayerNewsDto dto)
         {
@@ -26,6 +33,11 @@ namespace NFLFantasy.Api.Controllers
             return Ok(new { message = "Noticia agregada correctamente." });
         }
 
+        /// <summary>
+        /// Obtiene las noticias de un jugador NFL por su ID.
+        /// </summary>
+        /// <param name="playerId"></param>
+        /// <returns></returns>
         [HttpGet("{playerId}")]
         public async Task<IActionResult> GetNews(int playerId)
         {

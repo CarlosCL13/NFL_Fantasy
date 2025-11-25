@@ -1,3 +1,4 @@
+
 using NFLFantasy.Api.Services;
 using NFLFantasy.Api.Data;
 using NFLFantasy.Api.DataAccessLayer.Repositories;
@@ -62,11 +63,16 @@ builder.Services.AddScoped<PlayerNewsRepository>();
 builder.Services.AddScoped<PlayerNewsService>();
 
 // Registro de servicios de DataAccessLayer
-builder.Services.AddScoped<DirectoryManager>();
-builder.Services.AddScoped<ImageStorageHandler>();
-builder.Services.AddScoped<JsonFileHandler>();
+builder.Services.AddScoped<IDirectoryManager, DirectoryManager>();
+builder.Services.AddScoped<IImageStorageHandler, ImageStorageHandler>();
+builder.Services.AddScoped<IJsonFileHandler, JsonFileHandler>();
 builder.Services.AddScoped<INflPlayerRepository, NflPlayerRepository>();
 builder.Services.AddScoped<PositionRepository>();
+builder.Services.AddScoped<INflTeamRepository, NflTeamRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<ISeasonRepository, SeasonRepository>();
+builder.Services.AddScoped<ILeagueRepository, LeagueRepository>();
+builder.Services.AddScoped<IPlayerNewsRepository, PlayerNewsRepository>();
 
 // Registro de validadores
 builder.Services.AddScoped<NflPlayerValidator>();

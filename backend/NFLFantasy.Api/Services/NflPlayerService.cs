@@ -15,9 +15,9 @@ namespace NFLFantasy.Api.Services
     {
         private readonly INflPlayerRepository _repository;
         private readonly NflPlayerValidator _validator;
-        private readonly ImageStorageHandler _imageService;
+        private readonly IImageStorageHandler _imageService;
         
-        public NflPlayerService(INflPlayerRepository repository, NflPlayerValidator validator, ImageStorageHandler imageService)
+        public NflPlayerService(INflPlayerRepository repository, NflPlayerValidator validator, IImageStorageHandler imageService)
         {
             _repository = repository;
             _validator = validator;

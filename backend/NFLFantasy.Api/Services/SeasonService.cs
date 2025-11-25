@@ -7,6 +7,7 @@ using NFLFantasy.Api.Data;
 using NFLFantasy.Api.DTO;
 using NFLFantasy.Api.Models;
 using NFLFantasy.Api.DataAccessLayer.Repositories;
+using static NFLFantasy.Api.Validators.SeasonValidator;
 
 namespace NFLFantasy.Api.Services
 {
@@ -22,15 +23,18 @@ namespace NFLFantasy.Api.Services
         /// </summary>
         private readonly FantasyContext _context;
 
-        private readonly NFLFantasy.Api.DataAccessLayer.Repositories.SeasonRepository _repository;
+        /// <summary>
+        /// Repositorio de temporadas (inyección por interfaz).
+        /// </summary>
+        private readonly ISeasonRepository _repository;
 
         /// <summary>
         /// Constructor del servicio SeasonService.
         /// </summary>
-        public SeasonService(FantasyContext context)
+        public SeasonService(FantasyContext context, ISeasonRepository repository)
         {
             _context = context;
-            _repository = new NFLFantasy.Api.DataAccessLayer.Repositories.SeasonRepository(context);
+            _repository = repository;
         }
 
         /// <summary>
@@ -39,7 +43,7 @@ namespace NFLFantasy.Api.Services
         public async Task<(bool Success, string? Error, Season? Season)> CreateSeasonAsync(CreateSeasonDto dto)
         {
             // Validar datos de la temporada
-            var (isValid, errorMessage) = await NFLFantasy.Api.Validators.SeasonValidator.ValidateCreateSeasonAsync(dto, _context, _repository);
+            var (isValid, errorMessage) = await ValidateCreateSeasonAsync(dto, _context, _repository);
             if (!isValid){
                 return (false, errorMessage, null);
             }

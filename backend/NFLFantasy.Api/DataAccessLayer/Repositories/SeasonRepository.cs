@@ -4,7 +4,14 @@ using NFLFantasy.Api.Models;
 
 namespace NFLFantasy.Api.DataAccessLayer.Repositories
 {
-    public class SeasonRepository
+    public interface ISeasonRepository
+    {
+        Task<bool> SeasonNameExistsAsync(string name);
+        Task<bool> HasDateOverlapAsync(DateTime startDate, DateTime endDate);
+        Task AddSeasonAsync(Season season);
+    }
+
+    public class SeasonRepository : ISeasonRepository
     {
         private readonly FantasyContext _context;
         public SeasonRepository(FantasyContext context)
@@ -28,7 +35,7 @@ namespace NFLFantasy.Api.DataAccessLayer.Repositories
             return await _context.Seasons.AnyAsync(s =>
                 (startDate <= s.EndDate && endDate >= s.StartDate));
         }
-        
+
         /// <summary>
         /// Agrega una nueva temporada a la base de datos.
         /// </summary>
@@ -37,7 +44,5 @@ namespace NFLFantasy.Api.DataAccessLayer.Repositories
             _context.Seasons.Add(season);
             await _context.SaveChangesAsync();
         }
-        
-
     }
 }

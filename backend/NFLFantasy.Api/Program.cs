@@ -67,7 +67,7 @@ builder.Services.AddScoped<IDirectoryManager, DirectoryManager>();
 builder.Services.AddScoped<IImageStorageHandler, ImageStorageHandler>();
 builder.Services.AddScoped<IJsonFileHandler, JsonFileHandler>();
 builder.Services.AddScoped<INflPlayerRepository, NflPlayerRepository>();
-builder.Services.AddScoped<PositionRepository>();
+builder.Services.AddScoped<IPositionRepository, PositionRepository>();
 builder.Services.AddScoped<INflTeamRepository, NflTeamRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ISeasonRepository, SeasonRepository>();

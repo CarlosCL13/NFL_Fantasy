@@ -27,4 +27,20 @@ export class NflPlayerService implements INflPlayerService {
   getPositions(): Observable<any[]> {
     return this.http.get<any[]>(`${environment.apiUrl}/api/Position`);
   }
+
+  getPlayers(): Observable<any[]> {
+    return this.http.get<any[]>(`${environment.apiUrl}/api/nflplayers`);
+  }
+
+  getPlayerNews(playerId: number): Observable<any[]> {
+    return this.http.get<any[]>(`${environment.apiUrl}/api/playernews/${playerId}`);
+  }
+
+  createPlayerNews(body: any): Observable<any> {
+    return this.http.post(`${environment.apiUrl}/api/playernews`, body);
+  }
+
+  getDesignaciones(): Observable<any[]> {
+    return this.http.get<any[]>(`${environment.apiUrl}/api/designaciones`);
+  }
 }

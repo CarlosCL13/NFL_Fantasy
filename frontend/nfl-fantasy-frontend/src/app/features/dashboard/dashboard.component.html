@@ -9,10 +9,7 @@
 
   <div class="dashboard-grid">
     <!-- Solo Admin -->
-    <div
-      class="card action-card"
-      (click)="navigateTo('/leagues/create')"
-    >
+    <div class="card action-card" (click)="navigateTo('/leagues/create')">
       <div class="card-icon">🏆</div>
       <h3>Crear Liga</h3>
       <p>Crea una nueva liga de fantasy y conviértete en comisionado</p>
@@ -22,11 +19,11 @@
     <div
       class="card action-card"
       *ngIf="authService.getUserRole() === 'admin'"
-      (click)="navigateTo('/players/create')"
+      (click)="navigateTo('/players/view')"
     >
       <div class="card-icon">🏈</div>
-      <h3>Crear Jugadores</h3>
-      <p>Crea nuevos jugadores para los respectivos equipos</p>
+      <h3>Jugadores NFL</h3>
+      <p>Ver, gestionar y crear jugadores</p>
     </div>
 
     <!-- Todos los autenticados -->

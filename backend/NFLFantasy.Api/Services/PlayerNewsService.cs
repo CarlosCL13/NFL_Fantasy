@@ -32,7 +32,7 @@ namespace NFLFantasy.Api.Services
         /// <returns></returns>
         public async Task<(bool Success, List<string> Errors)> AddNewsAsync(CreatePlayerNewsDto dto, string autor)
         {
-            var errors = PlayerNewsValidator.Validate(dto);
+            var errors = PlayerNewsValidator.Validate(dto, _context);
             if (errors.Any())
                 return (false, errors);
 
@@ -48,10 +48,11 @@ namespace NFLFantasy.Api.Services
                 Texto = dto.Texto,
                 IsLesion = dto.IsLesion,
                 FechaCreacion = DateTime.UtcNow,
+                HoraCreacion = DateTime.UtcNow.ToString("HH:mm:ss"),
+                Cambios = $"Creado por {autor}",
                 Resumen = dto.IsLesion ? dto.Resumen : null,
-                Designacion = dto.IsLesion ? dto.Designacion : null,
-                Autor = autor,
-                Auditoria = $"Creado por {autor} el {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss}"
+                DesignacionId = dto.IsLesion ? dto.DesignacionId : null,
+                Autor = autor
             };
 
             // La designación solo se guarda en PlayerNews, no en NflPlayer.
@@ -68,7 +69,28 @@ namespace NFLFantasy.Api.Services
         /// <returns></returns>
         public async Task<List<PlayerNews>> GetNewsByPlayerAsync(int playerId)
         {
-            return await _newsRepository.GetByPlayerAsync(playerId);
+            // Incluye la designación en el resultado
+            return await _context.PlayerNews
+                .Include(n => n.Designacion)
+                .Where(n => n.PlayerId == playerId)
+                .ToListAsync();
+        }
+
+        /// <summary>
+        /// Obtiene la designación actual de lesión para un jugador.
+        /// </summary>
+        /// <param name="playerId"></param>
+        /// <returns></returns>
+        public async Task<Designacion?> GetCurrentDesignacionAsync(int playerId)
+        {
+            // Busca la última noticia de lesión con designación para el jugador
+            var news = await _context.PlayerNews
+                .Where(n => n.PlayerId == playerId && n.IsLesion && n.DesignacionId != null)
+                .OrderByDescending(n => n.FechaCreacion)
+                .FirstOrDefaultAsync();
+            if (news?.DesignacionId == null)
+                return null;
+            return await _context.Designaciones.FindAsync(news.DesignacionId);
         }
     }
 }

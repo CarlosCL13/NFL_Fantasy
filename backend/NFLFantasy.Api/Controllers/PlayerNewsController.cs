@@ -44,5 +44,19 @@ namespace NFLFantasy.Api.Controllers
             var news = await _service.GetNewsByPlayerAsync(playerId);
             return Ok(news);
         }
+
+        /// <summary>
+        /// Obtiene la designación actual de lesión para un jugador NFL por su ID.
+        /// </summary>
+        /// <param name="playerId"></param>
+        /// <returns></returns>
+        [HttpGet("{playerId}/current-designacion")]
+        public async Task<IActionResult> GetCurrentDesignacion(int playerId)
+        {
+            var designacion = await _service.GetCurrentDesignacionAsync(playerId);
+            if (designacion == null)
+                return Ok(new { message = "El jugador no tiene designación actual." });
+            return Ok(new { designacionId = designacion.Id, codigo = designacion.Codigo, descripcion = designacion.Descripcion });
+        }
     }
 }

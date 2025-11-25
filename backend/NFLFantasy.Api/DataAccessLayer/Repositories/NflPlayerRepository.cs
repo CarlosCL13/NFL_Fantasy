@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using NFLFantasy.Api.Data;
 using NFLFantasy.Api.Models;
 
@@ -10,6 +11,7 @@ namespace NFLFantasy.Api.DataAccessLayer.Repositories
         bool NflTeamExists(int nflTeamId);
         bool PositionExists(int positionId);
         bool PlayerExists(string name, int nflTeamId);
+        Task<List<NflPlayer>> GetAllAsync();
     }
     public class NflPlayerRepository : INflPlayerRepository
     {
@@ -24,6 +26,12 @@ namespace NFLFantasy.Api.DataAccessLayer.Repositories
         {
             _context.NflPlayers.Add(player);
             await _context.SaveChangesAsync();
+        }
+
+        // Método para obtener todos los jugadores NFL
+        public async Task<List<NflPlayer>> GetAllAsync()
+        {
+            return await _context.NflPlayers.ToListAsync();
         }
 
         // Métodos para validar existencia del equipo NFL

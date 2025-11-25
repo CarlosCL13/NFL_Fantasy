@@ -78,6 +78,16 @@ namespace NFLFantasy.Api.Controllers
         }
 
         /// <summary>
+        /// Consulta todos los jugadores NFL.
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> GetAll()
+        {
+            var players = await _nflPlayerService.GetAllAsync();
+            return Ok(players);
+        }
+
+        /// <summary>
         /// Crea un nuevo jugador NFL manualmente.
         /// </summary>
         [HttpPost]

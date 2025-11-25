@@ -64,6 +64,7 @@ builder.Services.AddScoped<PlayerNewsService>();
 
 // Registro de servicios de DataAccessLayer
 builder.Services.AddScoped<IDirectoryManager, DirectoryManager>();
+builder.Services.AddScoped<DirectoryManager>();
 builder.Services.AddScoped<IImageStorageHandler, ImageStorageHandler>();
 builder.Services.AddScoped<IJsonFileHandler, JsonFileHandler>();
 builder.Services.AddScoped<INflPlayerRepository, NflPlayerRepository>();

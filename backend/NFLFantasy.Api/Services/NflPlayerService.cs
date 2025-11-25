@@ -73,5 +73,12 @@ namespace NFLFantasy.Api.Services
             await _repository.AddAsync(player);
             return (true, null);
         }
+        /// <summary>
+        /// Obtiene todos los jugadores NFL.
+        /// </summary>
+        public async Task<List<NflPlayer>> GetAllAsync()
+        {
+            return await _repository.GetAllAsync();
+        }
     }
 }

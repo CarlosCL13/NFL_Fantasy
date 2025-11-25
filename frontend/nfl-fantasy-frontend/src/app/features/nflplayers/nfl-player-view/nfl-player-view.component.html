@@ -1,0 +1,104 @@
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Jugadores NFL</h2>
+
+    <button *ngIf="isAdmin()" class="btn btn-success" (click)="goToCreatePlayer()">
+      ➕ Crear Jugador
+    </button>
+  </div>
+
+  <!-- LISTA MINIMALISTA -->
+  <ul class="list-group">
+    <li
+      class="list-group-item d-flex justify-content-between align-items-center"
+      *ngFor="let p of players"
+      style="cursor: pointer"
+      (click)="selectPlayer(p)"
+    >
+      <div>
+        <strong>{{ p.name }}</strong>
+        <br />
+        <small [ngClass]="p.isActive ? 'text-success' : 'text-danger'">
+          {{ p.isActive ? 'Activo' : 'Inactivo' }}
+        </small>
+      </div>
+
+      <img
+        [src]="p.thumbnailUrl"
+        width="50"
+        height="50"
+        style="object-fit: cover; border-radius: 8px"
+      />
+    </li>
+  </ul>
+</div>
+
+<!-- MODAL -->
+<div class="modal-backdrop" *ngIf="showModal">
+  <div class="modal-content-custom">
+    <h3>Noticias de {{ selectedPlayer?.name }}</h3>
+
+    <!-- errores -->
+    <div *ngIf="errorMessage" class="alert alert-danger">{{ errorMessage }}</div>
+
+    <!-- formulario -->
+    <div class="mb-2">
+      <label>Texto *</label>
+      <textarea
+        class="form-control"
+        rows="4"
+        [(ngModel)]="noticia.texto"
+        maxlength="300"
+        placeholder="Entre 10 y 300 caracteres"
+      ></textarea>
+    </div>
+
+    <div class="form-check mb-2">
+      <input
+        type="checkbox"
+        class="form-check-input"
+        [(ngModel)]="noticia.isLesion"
+        id="isLesion"
+      />
+      <label class="form-check-label" for="isLesion">¿Es lesión?</label>
+    </div>
+
+    <div *ngIf="noticia.isLesion">
+      <label>Resumen (máx 30) *</label>
+      <input class="form-control" maxlength="30" [(ngModel)]="noticia.resumen" />
+
+      <label class="mt-2">Designación *</label>
+      <select class="form-select" [(ngModel)]="noticia.designacionId">
+        <option value="">-- seleccionar --</option>
+        <option *ngFor="let d of designaciones" [value]="d.id">
+          {{ d.codigo }} — {{ d.descripcion }}
+        </option>
+      </select>
+    </div>
+
+    <button class="btn btn-success w-100 mt-3" (click)="submitNews()">Guardar noticia</button>
+
+    <hr />
+
+    <!-- NOTICIAS PREVIAS -->
+    <h5>Noticias previas</h5>
+
+    <div *ngIf="loadingNews" class="text-center">Cargando...</div>
+
+    <div *ngIf="playerNews.length === 0 && !loadingNews" class="text-muted">
+      No hay noticias previas.
+    </div>
+
+    <div *ngFor="let n of playerNews" class="alert alert-light mt-2">
+      <strong>{{ n.fechaCreacion | date : 'short' }}</strong>
+      <br />
+      <b>{{ n.texto }}</b>
+      <br />
+      <small>{{ n.resumen }}</small>
+      <br />
+      <span class="badge bg-info text-dark">{{ n.designacionCodigo }}</span>
+    </div>
+
+    <button class="btn btn-danger w-100 mt-3" (click)="closeModal()">Cerrar</button>
+  </div>
+</div>

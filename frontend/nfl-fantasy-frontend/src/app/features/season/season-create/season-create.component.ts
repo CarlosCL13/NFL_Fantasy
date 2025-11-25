@@ -244,22 +244,16 @@ export class SeasonCreateComponent {
 
   /**
    * Actualiza el estado del control isCurrent basado en la información de temporada actual
+   * El checkbox siempre está habilitado para permitir cambiar la temporada actual
    */
   private updateCurrentSeasonControlState(): void {
     const isCurrentControl = this.seasonForm.get('isCurrent');
     if (!isCurrentControl) return;
 
-    if (this.currentSeasonInfo && !isCurrentControl.value) {
-      // Si hay una temporada actual y el checkbox no está marcado, deshabilitar
-      // Usar { emitEvent: false } para evitar el bucle infinito
-      if (isCurrentControl.enabled) {
-        isCurrentControl.disable({ emitEvent: false });
-      }
-    } else {
-      // Si no hay temporada actual o el checkbox está marcado, habilitar
-      if (isCurrentControl.disabled) {
-        isCurrentControl.enable({ emitEvent: false });
-      }
+    // El checkbox siempre debe estar habilitado
+    // La lógica de desactivar la temporada anterior se maneja en el backend
+    if (isCurrentControl.disabled) {
+      isCurrentControl.enable({ emitEvent: false });
     }
   }
 

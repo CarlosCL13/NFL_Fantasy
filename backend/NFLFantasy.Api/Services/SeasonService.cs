@@ -142,6 +142,7 @@ namespace NFLFantasy.Api.Services
             {
                 temporadaActual.IsCurrent = false;
                 _context.Seasons.Update(temporadaActual);
+                await _context.SaveChangesAsync();
             }
         }
 

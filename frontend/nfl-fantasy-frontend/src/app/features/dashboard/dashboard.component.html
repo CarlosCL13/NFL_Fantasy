@@ -26,11 +26,15 @@
       <p>Ver, gestionar y crear jugadores</p>
     </div>
 
-    <!-- Todos los autenticados -->
-    <div class="card action-card" (click)="navigateTo('/teams/create')">
+    <!-- Solo Admin -->
+    <div
+      class="card action-card"
+      *ngIf="authService.getUserRole() === 'admin'"
+      (click)="navigateTo('/teams/create')"
+    >
       <div class="card-icon">👥</div>
       <h3>Crear Equipo</h3>
-      <p>Crea un nuevo equipo para unirte a una liga existente</p>
+      <p>Crea un nuevo equipo NFL (Solo administradores)</p>
     </div>
 
     <!-- Solo Admin -->

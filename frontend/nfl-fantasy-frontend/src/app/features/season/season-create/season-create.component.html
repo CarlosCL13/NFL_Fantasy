@@ -112,7 +112,7 @@
               {{ getCurrentSeasonMessage() }}
             </small>
             <small *ngIf="currentSeasonInfo && seasonForm.get('isCurrent')?.value" class="warning-message">
-               Esto reemplazará la temporada actual existente
+              ⚠️ La temporada "{{ currentSeasonInfo.name }}" será desactivada automáticamente
             </small>
           </div>
         </div>

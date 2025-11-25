@@ -12,8 +12,8 @@
           <a class="nav-link" routerLink="/register">Registro</a>
         </li>
 
-        <!-- Solo para autenticados -->
-        <li class="nav-item" *ngIf="auth.isAuthenticated()">
+        <!-- Solo para administradores -->
+        <li class="nav-item" *ngIf="auth.isAuthenticated() && auth.getUserRole() === 'admin'">
           <a class="nav-link" routerLink="/teams/create">Crear equipo</a>
         </li>
 

@@ -18,15 +18,69 @@ namespace NFLFantasy.Api.Services
         private readonly NflPlayerService _playerService;
         private readonly IJsonFileHandler _jsonFileService;
         private readonly FantasyContext _context;
-        
+        private readonly IDirectoryManager _directoryManager;
+        private readonly NflPlayerValidator _nflPlayerValidator;
+        private readonly INflPlayerRepository _nflPlayerRepository;
+
         public NflPlayerBulkService(
             NflPlayerService playerService,
             IJsonFileHandler jsonFileService,
-            FantasyContext context)
+            FantasyContext context,
+            IDirectoryManager directoryManager,
+            NflPlayerValidator nflPlayerValidator,
+            INflPlayerRepository nflPlayerRepository)
         {
             _playerService = playerService;
             _jsonFileService = jsonFileService;
             _context = context;
+            _directoryManager = directoryManager;
+            _nflPlayerValidator = nflPlayerValidator;
+            _nflPlayerRepository = nflPlayerRepository;
+        }
+
+        /// <summary>
+        /// Maneja la carga masiva de jugadores NFL desde un archivo JSON subido.
+        /// </summary>
+        public async Task<BulkUploadResult> HandleBulkUploadAsync(IFormFile file)
+        {
+            // Validar archivo
+            if (file == null || file.Length == 0)
+                return new BulkUploadResult { Success = false, Errors = new List<string> { "Debe adjuntar un archivo JSON." } };
+
+            // Leer y deserializar JSON
+            List<NflPlayerBulkDto>? players;
+            using (var stream = new StreamReader(file.OpenReadStream()))
+            {
+                var json = await stream.ReadToEndAsync();
+                try
+                {
+                    players = System.Text.Json.JsonSerializer.Deserialize<List<NflPlayerBulkDto>>(json);
+                }
+                catch
+                {
+                    return new BulkUploadResult { Success = false, Errors = new List<string> { "El archivo no tiene formato JSON válido." } };
+                }
+            }
+            if (players == null || players.Count == 0)
+                return new BulkUploadResult { Success = false, Errors = new List<string> { "El archivo no contiene datos de jugadores." } };
+
+            // Manejo de carpetas y nombres
+            var uploadsFolder = _directoryManager.GetNflPlayersImagesPath();
+            var jsonUploadsFolder = _directoryManager.GetNflPlayersUploadsPath();
+            var jsonProcessedFolder = _directoryManager.GetNflPlayersProcessedPath();
+            _directoryManager.EnsureDirectoryExists(jsonUploadsFolder);
+            _directoryManager.EnsureDirectoryExists(jsonProcessedFolder);
+
+            // Guardar el archivo JSON subido en wwwroot/uploads
+            var uniqueFileName = _directoryManager.GenerateUniqueFileName(Path.GetFileNameWithoutExtension(file.FileName), ".json");
+            var jsonUploadPath = Path.Combine(jsonUploadsFolder, uniqueFileName);
+            using (var fileStream = new FileStream(jsonUploadPath, FileMode.Create))
+            {
+                await file.CopyToAsync(fileStream);
+            }
+
+            // Procesar jugadores y solo marcar como procesado exitoso si se insertan correctamente
+            return await ProcessBulkAsync(players, uploadsFolder, jsonUploadPath, jsonProcessedFolder);
         }
 
         /// <summary>
@@ -34,45 +88,61 @@ namespace NFLFantasy.Api.Services
         /// </summary>
         public async Task<BulkUploadResult> ProcessBulkAsync(List<NflPlayerBulkDto> players, string uploadsFolder, string originalFilePath, string processedFolder)
         {
+
             var errors = new List<string>();
             var successMessages = new List<string>();
             var createdCount = 0;
-            
-            // Validar que todas las imágenes existan antes de procesar
-            var imageValidationErrors = ValidateImageFilesExist(players);
-            if (imageValidationErrors.Any())
+
+            // 1. Validar imágenes usando el método dedicado
+            errors.AddRange(ValidateImageFilesExist(players));
+
+            // 2. Validar datos de los jugadores usando el validador
+            int idx = 1;
+            foreach (var dto in players)
             {
-                return await CreateErrorResult(imageValidationErrors, originalFilePath, processedFolder);
+                var playerDto = new NflPlayerCreateDto
+                {
+                    Name = dto.Name,
+                    PositionId = dto.PositionId,
+                    NflTeamId = dto.NflTeamId,
+                    Image = null! // No aplica para bulk
+                };
+                var (isValid, errorMsg) = _nflPlayerValidator.ValidateCreate(playerDto, _nflPlayerRepository, requireImage: false);
+                if (!isValid && !string.IsNullOrWhiteSpace(errorMsg))
+                    errors.Add($"Jugador #{idx} ('{dto.Name}'): {errorMsg}");
+                idx++;
             }
 
-            // Procesar cada jugador usando el servicio individual dentro de una transacción
+            if (errors.Count > 0)
+                return await CreateErrorResult(errors, originalFilePath, processedFolder);
+
+            // 2. Si todo está validado, ahora sí guardar jugadores e imágenes dentro de la transacción
             Directory.CreateDirectory(uploadsFolder);
             using (var transaction = _context.Database.BeginTransaction())
             {
                 try
                 {
-                    int idx = 1;
+                    idx = 1;
                     foreach (var dto in players)
                     {
                         var (playerCreated, playerErrors, playerSuccess) = await ProcessSinglePlayerAsync(dto, uploadsFolder, idx);
-                        
+
                         if (playerCreated)
                         {
                             createdCount++;
                             successMessages.AddRange(playerSuccess);
                         }
-                        
+
                         errors.AddRange(playerErrors);
                         idx++;
                     }
-                    
-                    // Si hubo errores de validación, hacer rollback (todo o nada)
+
                     if (errors.Count > 0)
                     {
                         transaction.Rollback();
                         return await CreateErrorResult(errors, originalFilePath, processedFolder);
                     }
-                    
+
                     await _context.SaveChangesAsync();
                     transaction.Commit();
                 }
@@ -83,7 +153,7 @@ namespace NFLFantasy.Api.Services
                 }
             }
 
-            // Mover archivo exitoso
+            // Solo aquí se marca como procesado exitoso
             return await CreateSuccessResult(createdCount, successMessages, originalFilePath, processedFolder);
         }
 

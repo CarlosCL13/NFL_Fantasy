@@ -20,21 +20,21 @@ namespace NFLFantasy.Api.Services
         private readonly FantasyContext _context;
 
         //Referencia al repositorio de equipos NFL
-        private readonly NFLFantasy.Api.DataAccessLayer.Repositories.NflTeamRepository _repository;
+        private readonly   INflTeamRepository _repository;
 
         //Referencia al manejador de directorios
-        private readonly DirectoryManager _directoryManager;
+        private readonly IDirectoryManager _directoryManager;
 
         //Referencia al manejador de imágenes
-        private readonly ImageStorageHandler _imageStorageHandler;
+        private readonly IImageStorageHandler _imageStorageHandler;
         
         /// <summary>
         /// Constructor del servicio NflTeamService.
         /// </summary>
-        public NflTeamService(FantasyContext context, DirectoryManager directoryManager, ImageStorageHandler imageStorageHandler)
+        public NflTeamService(FantasyContext context, INflTeamRepository repository, IDirectoryManager directoryManager, IImageStorageHandler imageStorageHandler)
         {
             _context = context;
-            _repository = new NFLFantasy.Api.DataAccessLayer.Repositories.NflTeamRepository(context);
+            _repository = repository;
             _directoryManager = directoryManager;
             _imageStorageHandler = imageStorageHandler;
         }

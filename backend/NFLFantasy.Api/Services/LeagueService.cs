@@ -7,8 +7,10 @@ using NFLFantasy.Api.Data;
 using NFLFantasy.Api.DTO;
 using NFLFantasy.Api.Models;
 using BCrypt.Net;
-
+using NFLFantasy.Api.DataAccessLayer.Repositories;
 using NFLFantasy.Api.Utils;
+
+
 namespace NFLFantasy.Api.Services
 {
     /// <summary>
@@ -20,15 +22,12 @@ namespace NFLFantasy.Api.Services
         private readonly FantasyContext _context;
 
         // Referencia al repositorio de ligas
-        private readonly NFLFantasy.Api.DataAccessLayer.Repositories.LeagueRepository _leagueRepository;
+        private readonly ILeagueRepository _leagueRepository;
 
-        /// <summary>
-        /// Constructor del servicio LeagueService.
-        /// </summary>
-        public LeagueService(FantasyContext context)
+        public LeagueService(FantasyContext context, ILeagueRepository leagueRepository)
         {
             _context = context;
-            _leagueRepository = new NFLFantasy.Api.DataAccessLayer.Repositories.LeagueRepository(context);
+            _leagueRepository = leagueRepository;
         }
 
         /// <summary>

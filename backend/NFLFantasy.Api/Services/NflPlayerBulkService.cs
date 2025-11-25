@@ -16,12 +16,12 @@ namespace NFLFantasy.Api.Services
     public class NflPlayerBulkService
     {
         private readonly NflPlayerService _playerService;
-        private readonly JsonFileHandler _jsonFileService;
+        private readonly IJsonFileHandler _jsonFileService;
         private readonly FantasyContext _context;
         
         public NflPlayerBulkService(
             NflPlayerService playerService,
-            JsonFileHandler jsonFileService,
+            IJsonFileHandler jsonFileService,
             FantasyContext context)
         {
             _playerService = playerService;

@@ -11,7 +11,7 @@ namespace NFLFantasy.Api.Validators
         /// <summary>
         /// Valida los datos para crear un nuevo usuario.
         /// </summary>
-        public static async Task<(bool IsValid, string? ErrorMessage)> ValidateCreateUserAsync(RegisterUserDto dto, UserRepository repository)
+        public static async Task<(bool IsValid, string? ErrorMessage)> ValidateCreateUserAsync(RegisterUserDto dto, IUserRepository repository)
         {
             // Verificar que el correo no exista
             if (await repository.EmailExistsAsync(dto.Email))

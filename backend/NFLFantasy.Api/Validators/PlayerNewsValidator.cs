@@ -5,8 +5,14 @@ namespace NFLFantasy.Api.Validators
 {
     public static class PlayerNewsValidator
     {
+        /// Designaciones válidas para lesiones.
         private static readonly HashSet<string> ValidDesignaciones = new HashSet<string> { "O", "D", "Q", "P", "FP", "IR", "PUP", "SUS" };
 
+        /// <summary>
+        /// Valida el DTO para crear noticias de jugadores.
+        /// </summary>
+        /// <param name="dto"></param>
+        /// <returns></returns>
         public static List<string> Validate(CreatePlayerNewsDto dto)
         {
             var errors = new List<string>();

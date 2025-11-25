@@ -2,9 +2,14 @@ using Microsoft.EntityFrameworkCore;
 using NFLFantasy.Api.Data;
 using NFLFantasy.Api.Models;
 
-namespace NFLFantasy.Api.DataAccessLayer.Repositories
-{
-    public class NflTeamRepository
+namespace NFLFantasy.Api.DataAccessLayer.Repositories {
+    public interface INflTeamRepository
+    {
+        Task<bool> NflTeamNameExistsAsync(string name);
+        Task AddNflTeamAsync(NflTeam team);
+    }
+
+    public class NflTeamRepository : INflTeamRepository
     {
         private readonly FantasyContext _context;
         public NflTeamRepository(FantasyContext context)
@@ -12,9 +17,8 @@ namespace NFLFantasy.Api.DataAccessLayer.Repositories
             _context = context;
         }
 
-
         /// <summary>
-        /// Verifica si ya existe un equipo de la NFL con el nombre dado.
+        /// Verifica si ya existe un equipo NFL con el nombre dado.
         /// </summary>
         public async Task<bool> NflTeamNameExistsAsync(string name)
         {
@@ -22,7 +26,7 @@ namespace NFLFantasy.Api.DataAccessLayer.Repositories
         }
 
         /// <summary>
-        /// Agrega un nuevo equipo de la NFL a la base de datos.
+        /// Agrega un nuevo equipo NFL a la base de datos.
         /// </summary>
         public async Task AddNflTeamAsync(NflTeam team)
         {

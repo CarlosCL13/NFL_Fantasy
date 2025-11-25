@@ -5,7 +5,17 @@ using NFLFantasy.Api.Models;
 
 namespace NFLFantasy.Api.DataAccessLayer.Repositories
 {
-    public class UserRepository
+    public interface IUserRepository
+    {
+        Task<bool> EmailExistsAsync(string email);
+        Task<bool> AliasExistsAsync(string alias);
+        Task<Role?> GetManagerRoleAsync();
+        Task AddUserAsync(User user);
+        Task UpdateUserAsync(User user);
+        Task<User?> GetUserByEmailAsync(string email);
+    }
+
+    public class UserRepository : IUserRepository
     {
         private readonly FantasyContext _context;
         public UserRepository(FantasyContext context)

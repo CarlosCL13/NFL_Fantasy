@@ -1,3 +1,4 @@
+using NFLFantasy.Api.DataAccessLayer.Repositories;
 using NFLFantasy.Api.Data;
 using NFLFantasy.Api.DTO;
 using NFLFantasy.Api.Models;
@@ -24,19 +25,22 @@ namespace NFLFantasy.Api.Services
         //Referencia a la configuración de la aplicación
         private readonly IConfiguration _configuration;
 
-        private readonly NFLFantasy.Api.DataAccessLayer.Repositories.UserRepository _repository;
+        /// <summary>
+        /// Repositorio de usuarios (inyección por interfaz).
+        /// </summary>
+        private readonly IUserRepository _repository;
 
         //Referencia al manejador de directorios
-        private readonly DirectoryManager _directoryManager;
+        private readonly IDirectoryManager _directoryManager;
 
         /// <summary>
         /// Constructor del servicio UserService.
         /// </summary>
-        public UserService(FantasyContext context, IConfiguration configuration, DirectoryManager directoryManager)
+        public UserService(FantasyContext context, IConfiguration configuration, IUserRepository repository, IDirectoryManager directoryManager)
         {
             _context = context; //Inicializa el contexto de la base de datos
             _configuration = configuration; //Inicializa la configuración de la aplicación
-            _repository = new NFLFantasy.Api.DataAccessLayer.Repositories.UserRepository(context);
+            _repository = repository;
             _directoryManager = directoryManager;
         }
 
@@ -52,7 +56,7 @@ namespace NFLFantasy.Api.Services
         public async Task<(bool Success, string? Error, User? User)> RegisterAsync(RegisterUserDto dto)
         {
             // Validar datos del usuario
-            var (isValid, errorMessage) = await NFLFantasy.Api.Validators.UserValidator.ValidateCreateUserAsync(dto, _repository);
+            (bool isValid, string? errorMessage) = await NFLFantasy.Api.Validators.UserValidator.ValidateCreateUserAsync(dto, _repository);
             if (!isValid)
             {
                 return (false, errorMessage, null);

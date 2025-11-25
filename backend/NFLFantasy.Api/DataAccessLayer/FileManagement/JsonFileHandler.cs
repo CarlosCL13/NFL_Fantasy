@@ -3,11 +3,16 @@ namespace NFLFantasy.Api.DataAccessLayer.FileManagement;
 /// <summary>
 /// Handles JSON file operations including moving to processed folder
 /// </summary>
-public class JsonFileHandler
+public interface IJsonFileHandler
 {
-    private readonly StorageManagement.DirectoryManager _directoryManager;
+    (bool success, string? processedPath, string? errorMessage) MoveToProcessedFolder(string originalFilePath, string processedFolder, bool hasErrors = false);
+}
 
-    public JsonFileHandler(StorageManagement.DirectoryManager directoryManager)
+public class JsonFileHandler : IJsonFileHandler
+{
+    private readonly StorageManagement.IDirectoryManager _directoryManager;
+
+    public JsonFileHandler(StorageManagement.IDirectoryManager directoryManager)
     {
         _directoryManager = directoryManager;
     }

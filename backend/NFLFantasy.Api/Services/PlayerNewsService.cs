@@ -14,13 +14,22 @@ namespace NFLFantasy.Api.Services
     public class PlayerNewsService
     {
         private readonly FantasyContext _context;
-        private readonly PlayerNewsRepository _newsRepository;
-        public PlayerNewsService(FantasyContext context, PlayerNewsRepository newsRepository)
+        private readonly IPlayerNewsRepository _newsRepository;
+        /// <summary>
+        /// Constructor del servicio PlayerNewsService.
+        /// </summary>
+        public PlayerNewsService(FantasyContext context, IPlayerNewsRepository newsRepository)
         {
             _context = context;
             _newsRepository = newsRepository;
         }
 
+        /// <summary>
+        /// Agrega una noticia para un jugador específico.
+        /// </summary>
+        /// <param name="dto"></param>
+        /// <param name="autor"></param>
+        /// <returns></returns>
         public async Task<(bool Success, List<string> Errors)> AddNewsAsync(CreatePlayerNewsDto dto, string autor)
         {
             var errors = PlayerNewsValidator.Validate(dto);
@@ -51,7 +60,12 @@ namespace NFLFantasy.Api.Services
             await _context.SaveChangesAsync();
             return (true, new List<string>());
         }
-
+        
+        /// <summary>
+        /// Obtiene las noticias de un jugador específico.
+        /// </summary>
+        /// <param name="playerId"></param>
+        /// <returns></returns>
         public async Task<List<PlayerNews>> GetNewsByPlayerAsync(int playerId)
         {
             return await _newsRepository.GetByPlayerAsync(playerId);

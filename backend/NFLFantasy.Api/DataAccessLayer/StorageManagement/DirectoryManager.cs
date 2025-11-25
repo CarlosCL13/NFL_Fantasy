@@ -1,9 +1,21 @@
 namespace NFLFantasy.Api.DataAccessLayer.StorageManagement;
 
 /// <summary>
-/// Manages directory paths and operations for the application
+/// Maneja la creación y verificación de directorios para almacenamiento de imágenes y otros archivos.
 /// </summary>
-public class DirectoryManager
+public interface IDirectoryManager
+{
+    string GetNflPlayersImagesPath();
+    string GetNflPlayersUploadsPath();
+    string GetNflPlayersProcessedPath();
+    string GetNflTeamsImagesPath();
+    string GetUsersImagesPath();
+    void EnsureDirectoryExists(string path);
+    string GenerateUniqueFileName(string baseName, string extension);
+    string GenerateUniqueFileName(string baseName, string extension, bool hasError);
+}
+
+public class DirectoryManager : IDirectoryManager
 {
     private readonly IWebHostEnvironment _environment;
 

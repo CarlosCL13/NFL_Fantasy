@@ -4,7 +4,8 @@ using Microsoft.EntityFrameworkCore;
 using NFLFantasy.Api.Utils;
 using NFLFantasy.Api.Models;
 using NFLFantasy.Api.DataAccessLayer.Repositories;
-
+using NFLFantasy.Api.DTO;
+using NFLFantasy.Api.Data;
 
 namespace NFLFantasy.Api.Validators
 {
@@ -31,9 +32,9 @@ namespace NFLFantasy.Api.Validators
         /// Validaciones centralizadas para la creación de liga.
         /// </summary>
         public static async Task<(bool IsValid, string? Error)> ValidateCreateLeagueAsync(
-            NFLFantasy.Api.DTO.CreateLeagueDto dto,
-            NFLFantasy.Api.Data.FantasyContext context,
-            NFLFantasy.Api.DataAccessLayer.Repositories.LeagueRepository leagueRepository)
+            CreateLeagueDto dto,
+            FantasyContext context,
+            ILeagueRepository leagueRepository)
         {
             // Validar nombre de liga
             if (string.IsNullOrWhiteSpace(dto.Name) || dto.Name.Length > 100){
@@ -74,8 +75,8 @@ namespace NFLFantasy.Api.Validators
         /// </summary>
         public static async Task<(bool IsValid, string? Error, League? League)> ValidateJoinLeagueAsync(
             int userId,
-            NFLFantasy.Api.DTO.JoinLeagueDto dto,
-            NFLFantasy.Api.Data.FantasyContext context)
+            JoinLeagueDto dto,
+            FantasyContext context)
         {
             // Validar existencia de la liga y contraseña
             var league = await context.Leagues

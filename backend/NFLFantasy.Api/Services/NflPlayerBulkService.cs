@@ -48,11 +48,10 @@ namespace NFLFantasy.Api.Services
                 return new BulkUploadResult { Success = false, Errors = new List<string> { "Debe adjuntar un archivo JSON." } };
 
             // Manejo de carpetas y nombres
+            _directoryManager.EnsureAllNflPlayersDirectoriesExist();
             var uploadsFolder = _directoryManager.GetNflPlayersImagesPath();
             var jsonUploadsFolder = _directoryManager.GetNflPlayersUploadsPath();
             var jsonProcessedFolder = _directoryManager.GetNflPlayersProcessedPath();
-            _directoryManager.EnsureDirectoryExists(jsonUploadsFolder);
-            _directoryManager.EnsureDirectoryExists(jsonProcessedFolder);
 
             // Guardar el archivo JSON subido en wwwroot/uploads (siempre se guarda para trazabilidad)
             var uniqueFileName = _directoryManager.GenerateUniqueFileName(Path.GetFileNameWithoutExtension(file.FileName), ".json");

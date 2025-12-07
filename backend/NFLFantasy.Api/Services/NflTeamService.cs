@@ -84,6 +84,7 @@ namespace NFLFantasy.Api.Services
         {
             try
             {
+                _directoryManager.EnsureAllNflTeamsDirectoriesExist();
                 var uploadsFolder = _directoryManager.GetNflTeamsImagesPath();
                 var (imageFileName, thumbnailFileName) = await _imageStorageHandler.ProcessImageAsync(image, uploadsFolder);
                 return (imageFileName, thumbnailFileName, null);

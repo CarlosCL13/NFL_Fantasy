@@ -29,9 +29,14 @@ namespace NFLFantasy.Api.Services
         /// </summary>
         public async Task<(bool Success, string? Error)> CreateNflPlayerAsync(NflPlayerCreateDto dto, IFormFile imageFile, string uploadsFolder)
         {
-            // Procesar imagen y generar thumbnail usando el servicio compartido
+            // Validar primero todos los datos
+            var (isValid, error) = _validator.ValidateCreate(dto, _repository, requireImage: true);
+            if (!isValid)
+                return (false, error);
+
+            // Procesar imagen y generar thumbnail solo si la validación fue exitosa
             var (uniqueFileName, thumbnailFileName) = await _imageService.ProcessImageAsync(imageFile, uploadsFolder);
-            
+
             return await CreatePlayerInternalAsync(dto, uniqueFileName, thumbnailFileName, requireImageValidation: true);
         }
 

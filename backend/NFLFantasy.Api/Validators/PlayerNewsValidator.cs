@@ -13,7 +13,10 @@ namespace NFLFantasy.Api.Validators
             var errors = new List<string>();
 
             if (string.IsNullOrWhiteSpace(dto.Texto) || dto.Texto.Length < 10 || dto.Texto.Length > 300)
+            {
                 errors.Add("El texto debe tener entre 10 y 300 caracteres.");
+            }
+                
 
             if (dto.IsLesion)
             {

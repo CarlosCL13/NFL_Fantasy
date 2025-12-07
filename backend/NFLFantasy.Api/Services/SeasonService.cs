@@ -187,3 +187,15 @@ namespace NFLFantasy.Api.Services
         }
     }
 }
+
+public interface ISeasonRepository
+{
+    Task<Season?> GetByIdAsync(int id);
+    Task<List<Season>> GetAllAsync();
+    Task<Season?> GetCurrentSeasonAsync();
+    Task AddSeasonAsync(Season season);
+    Task UpdateSeasonAsync(Season season);
+    Task<bool> SeasonNameExistsAsync(string name);
+    Task<bool> HasCurrentSeasonAsync();
+    Task<bool> HasDateOverlapAsync(DateTime start, DateTime end);
+}

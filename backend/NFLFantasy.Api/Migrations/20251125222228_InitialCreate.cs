@@ -12,6 +12,20 @@ namespace NFLFantasy.Api.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
+                name: "Designaciones",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Codigo = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Descripcion = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Designaciones", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "LeagueAudits",
                 columns: table => new
                 {
@@ -43,26 +57,6 @@ namespace NFLFantasy.Api.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_NflTeams", x => x.NflTeamId);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "PlayerNews",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    PlayerId = table.Column<int>(type: "int", nullable: false),
-                    Texto = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    IsLesion = table.Column<bool>(type: "bit", nullable: false),
-                    FechaCreacion = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    Resumen = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Designacion = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Autor = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Auditoria = table.Column<string>(type: "nvarchar(max)", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_PlayerNews", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -127,6 +121,32 @@ namespace NFLFantasy.Api.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Seasons", x => x.SeasonId);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "PlayerNews",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    PlayerId = table.Column<int>(type: "int", nullable: false),
+                    Texto = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    IsLesion = table.Column<bool>(type: "bit", nullable: false),
+                    FechaCreacion = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Resumen = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    DesignacionId = table.Column<int>(type: "int", nullable: true),
+                    Autor = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    HoraCreacion = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Cambios = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_PlayerNews", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_PlayerNews_Designaciones_DesignacionId",
+                        column: x => x.DesignacionId,
+                        principalTable: "Designaciones",
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -374,6 +394,11 @@ namespace NFLFantasy.Api.Migrations
                 column: "PositionId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_PlayerNews_DesignacionId",
+                table: "PlayerNews",
+                column: "DesignacionId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Teams_LeagueId",
                 table: "Teams",
                 column: "LeagueId");
@@ -432,6 +457,9 @@ namespace NFLFantasy.Api.Migrations
 
             migrationBuilder.DropTable(
                 name: "Positions");
+
+            migrationBuilder.DropTable(
+                name: "Designaciones");
 
             migrationBuilder.DropTable(
                 name: "Leagues");

@@ -9,6 +9,7 @@ import { NflPlayerCreateComponent } from './features/nflplayers/nfl-player-creat
 import { DashboardComponent } from './features/dashboard/dashboard.component';
 import { AuthGuard } from './core/guards/auth.guard';
 import { RoleGuard } from './core/guards/role.guard';
+import { NflPlayerViewComponent } from './features/nflplayers/nfl-player-view/nfl-player-view.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
@@ -26,12 +27,18 @@ export const routes: Routes = [
   {
     path: 'leagues/create',
     component: LeagueCreateComponent,
-    canActivate: [AuthGuard, RoleGuard],
-    data: { role: 'admin' },
+    canActivate: [AuthGuard],
   },
   {
     path: 'players/create',
     component: NflPlayerCreateComponent,
+    canActivate: [AuthGuard, RoleGuard],
+    data: { role: 'admin' },
+  },
+
+  {
+    path: 'players/view',
+    component: NflPlayerViewComponent,
     canActivate: [AuthGuard, RoleGuard],
     data: { role: 'admin' },
   },

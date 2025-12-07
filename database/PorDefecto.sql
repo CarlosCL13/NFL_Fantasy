@@ -12,22 +12,22 @@ VALUES
 ('Tight End', 'TE', 'Ala cerrada'),
 ('Kicker', 'K', 'Pateador'),
 ('Defense/Special Teams', 'DEF', 'Defensa y equipos especiales'),
-('Flex RB/WR', 'FLEX', 'Posición flexible: RB o WR'),
-('Bench', 'BN', 'Banca, cualquier posición'),
-('Injured Reserve', 'IR', 'Reserva por lesión');
+('Flex RB/WR', 'FLEX', 'Posiciï¿½n flexible: RB o WR'),
+('Bench', 'BN', 'Banca, cualquier posiciï¿½n'),
+('Injured Reserve', 'IR', 'Reserva por lesiï¿½n');
 
 INSERT INTO Scorings (Name, Abbreviation, Description, Points, Unit)
 VALUES
 ('Passing Yards', 'PY', '1 punto cada 25 yardas por pase', 1, '25yds'),
 ('Passing Touchdowns', 'PTD', 'Touchdown por pase', 4, 'TD'),
-('Interceptions Thrown', 'INTT', 'Intercepción lanzada', -2, 'INT'),
+('Interceptions Thrown', 'INTT', 'Intercepciï¿½n lanzada', -2, 'INT'),
 ('Rushing Yards', 'RY', '1 punto cada 10 yardas por acarreo', 1, '10yds'),
-('Receptions', 'REC', 'Recepción', 1, 'Reception'),
-('Receiving Yards', 'REY', '1 punto cada 10 yardas por recepción', 1, '10yds'),
-('Rush/Recv Touchdowns', 'RTD', 'Touchdown por acarreo o recepción', 6, 'TD'),
+('Receptions', 'REC', 'Recepciï¿½n', 1, 'Reception'),
+('Receiving Yards', 'REY', '1 punto cada 10 yardas por recepciï¿½n', 1, '10yds'),
+('Rush/Recv Touchdowns', 'RTD', 'Touchdown por acarreo o recepciï¿½n', 6, 'TD'),
 ('Sacks', 'SACK', 'Captura defensiva', 1, 'Sack'),
-('Interceptions', 'INT', 'Intercepción defensiva', 2, 'INT'),
-('Fumbles Recovered', 'FR', 'Balón suelto recuperado', 2, 'Fumble'),
+('Interceptions', 'INT', 'Intercepciï¿½n defensiva', 2, 'INT'),
+('Fumbles Recovered', 'FR', 'Balï¿½n suelto recuperado', 2, 'Fumble'),
 ('Safeties', 'SAFE', 'Safety defensivo', 2, 'Safety'),
 ('Touchdowns', 'TD', 'Touchdown defensivo', 6, 'TD'),
 ('Team Def 2-point Return', 'DEF2PT', 'Retorno de 2 puntos defensivo', 2, '2ptReturn'),
@@ -38,3 +38,13 @@ VALUES
 ('Points Allowed <=20', 'PA20', 'Puntos permitidos <=20', 2, 'PointsAllowed'),
 ('Points Allowed <=30', 'PA30', 'Puntos permitidos <=30', 0, 'PointsAllowed'),
 ('Points Allowed >30', 'PA30+', 'Puntos permitidos >30', -2, 'PointsAllowed');
+
+INSERT INTO Designaciones(Codigo, Descripcion)
+VALUES 
+('O', 'No jugaran'),
+('D', 'Muy poco probable que juegue 25%'),
+('Q', 'Cuestionable 50%'),
+('P', 'Participacion plena'),
+('IR', 'Reserva de lesiones'),
+('PUP', 'Incapaz FÃ­sicamente de Jugar'),
+('SUS', 'Suspendido');

@@ -29,8 +29,9 @@ namespace NFLFantasy.Api.Data
         public DbSet<Scoring> Scorings { get; set; }
         public DbSet<DefaultPosition> DefaultPositions { get; set; }
         public DbSet<DefaultScoring> DefaultScorings { get; set; }
-
         public DbSet<NflPlayer> NflPlayers { get; set; }
+        public DbSet<PlayerNews> PlayerNews { get; set; }
+        public DbSet<Designacion> Designaciones { get; set; }
 
         /// <summary>
         /// Configuraciones adicionales del modelo.

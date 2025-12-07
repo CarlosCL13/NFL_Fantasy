@@ -1,5 +1,10 @@
+
 using NFLFantasy.Api.Services;
 using NFLFantasy.Api.Data;
+using NFLFantasy.Api.DataAccessLayer.Repositories;
+using NFLFantasy.Api.DataAccessLayer.StorageManagement;
+using NFLFantasy.Api.DataAccessLayer.FileManagement;
+using NFLFantasy.Api.Validators;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -52,11 +57,26 @@ builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<NflTeamService>();
 builder.Services.AddScoped<SeasonService>();
 builder.Services.AddScoped<LeagueService>();
-builder.Services.AddScoped<NFLFantasy.Api.Services.NflPlayerService>();
-builder.Services.AddScoped<NFLFantasy.Api.Repositories.NflPlayerRepository>();
-builder.Services.AddScoped<NFLFantasy.Api.Validators.NflPlayerValidator>();
-builder.Services.AddScoped<NFLFantasy.Api.Repositories.PositionRepository>();
-builder.Services.AddScoped<NFLFantasy.Api.Services.NflPlayerBulkService>();
+builder.Services.AddScoped<NflPlayerService>();
+builder.Services.AddScoped<NflPlayerBulkService>();
+builder.Services.AddScoped<PlayerNewsRepository>();
+builder.Services.AddScoped<PlayerNewsService>();
+
+// Registro de servicios de DataAccessLayer
+builder.Services.AddScoped<IDirectoryManager, DirectoryManager>();
+builder.Services.AddScoped<DirectoryManager>();
+builder.Services.AddScoped<IImageStorageHandler, ImageStorageHandler>();
+builder.Services.AddScoped<IJsonFileHandler, JsonFileHandler>();
+builder.Services.AddScoped<INflPlayerRepository, NflPlayerRepository>();
+builder.Services.AddScoped<IPositionRepository, PositionRepository>();
+builder.Services.AddScoped<INflTeamRepository, NflTeamRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<ISeasonRepository, SeasonRepository>();
+builder.Services.AddScoped<ILeagueRepository, LeagueRepository>();
+builder.Services.AddScoped<IPlayerNewsRepository, PlayerNewsRepository>();
+
+// Registro de validadores
+builder.Services.AddScoped<NflPlayerValidator>();
 
 // Añade controladores MVC
 builder.Services.AddControllers();

@@ -1,9 +1,11 @@
+using NFLFantasy.Api.DataAccessLayer.Repositories;
 using NFLFantasy.Api.Data;
 using NFLFantasy.Api.DTO;
 using NFLFantasy.Api.Models;
 using Microsoft.EntityFrameworkCore;
 using NFLFantasy.Api.Utils;
 using NFLFantasy.Api;
+using NFLFantasy.Api.DataAccessLayer.StorageManagement;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
@@ -23,16 +25,23 @@ namespace NFLFantasy.Api.Services
         //Referencia a la configuración de la aplicación
         private readonly IConfiguration _configuration;
 
-        private readonly NFLFantasy.Api.Repositories.UserRepository _repository;
+        /// <summary>
+        /// Repositorio de usuarios (inyección por interfaz).
+        /// </summary>
+        private readonly IUserRepository _repository;
+
+        //Referencia al manejador de directorios
+        private readonly IDirectoryManager _directoryManager;
 
         /// <summary>
         /// Constructor del servicio UserService.
         /// </summary>
-        public UserService(FantasyContext context, IConfiguration configuration)
+        public UserService(FantasyContext context, IConfiguration configuration, IUserRepository repository, IDirectoryManager directoryManager)
         {
             _context = context; //Inicializa el contexto de la base de datos
             _configuration = configuration; //Inicializa la configuración de la aplicación
-            _repository = new NFLFantasy.Api.Repositories.UserRepository(context);
+            _repository = repository;
+            _directoryManager = directoryManager;
         }
 
         /// <summary>
@@ -47,7 +56,7 @@ namespace NFLFantasy.Api.Services
         public async Task<(bool Success, string? Error, User? User)> RegisterAsync(RegisterUserDto dto)
         {
             // Validar datos del usuario
-            var (isValid, errorMessage) = await NFLFantasy.Api.Validators.UserValidator.ValidateCreateUserAsync(dto, _repository);
+            (bool isValid, string? errorMessage) = await NFLFantasy.Api.Validators.UserValidator.ValidateCreateUserAsync(dto, _repository);
             if (!isValid)
             {
                 return (false, errorMessage, null);
@@ -182,8 +191,8 @@ namespace NFLFantasy.Api.Services
                 return null;
             }
 
-            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), AppConstants.UsersImageFolder.Replace("/", Path.DirectorySeparatorChar.ToString()));
-            Directory.CreateDirectory(uploadsFolder);
+            var uploadsFolder = _directoryManager.GetUsersImagesPath();
+            _directoryManager.EnsureDirectoryExists(uploadsFolder);
 
             var uniqueFileName = $"{Guid.NewGuid()}_{image.FileName}";
             var filePath = Path.Combine(uploadsFolder, uniqueFileName);

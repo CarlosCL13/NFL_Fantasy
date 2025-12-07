@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using NFLFantasy.Api.Repositories;
+using NFLFantasy.Api.DataAccessLayer.Repositories;
 
 namespace NFLFantasy.Api.Controllers
 {
@@ -7,12 +7,23 @@ namespace NFLFantasy.Api.Controllers
     [Route("api/[controller]")]
     public class PositionController : ControllerBase
     {
-        private readonly PositionRepository _repository;
-        public PositionController(PositionRepository repository)
+        /// <summary>
+        /// Repositorio para acceder a las posiciones.
+        /// </summary>
+        private readonly IPositionRepository _repository;
+
+        /// <summary>
+        /// Constructor del controlador de posiciones.
+        /// </summary>
+        /// <param name="repository"></param>
+        public PositionController(IPositionRepository repository)
         {
             _repository = repository;
         }
 
+        /// <summary>
+        /// Obtiene todas las posiciones disponibles.
+        /// </summary>
         [HttpGet]
         public IActionResult GetAll()
         {

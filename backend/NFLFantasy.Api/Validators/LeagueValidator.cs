@@ -3,8 +3,9 @@ using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using NFLFantasy.Api.Utils;
 using NFLFantasy.Api.Models;
-using NFLFantasy.Api.Repositories;
-
+using NFLFantasy.Api.DataAccessLayer.Repositories;
+using NFLFantasy.Api.DTO;
+using NFLFantasy.Api.Data;
 
 namespace NFLFantasy.Api.Validators
 {
@@ -31,39 +32,39 @@ namespace NFLFantasy.Api.Validators
         /// Validaciones centralizadas para la creación de liga.
         /// </summary>
         public static async Task<(bool IsValid, string? Error)> ValidateCreateLeagueAsync(
-            NFLFantasy.Api.DTO.CreateLeagueDto dto,
-            NFLFantasy.Api.Data.FantasyContext context,
-            NFLFantasy.Api.Repositories.LeagueRepository leagueRepository)
+            CreateLeagueDto dto,
+            FantasyContext context,
+            ILeagueRepository leagueRepository)
         {
             // Validar nombre de liga
             if (string.IsNullOrWhiteSpace(dto.Name) || dto.Name.Length > 100){
-                return (false, "El nombre de la liga debe tener entre 1 y 100 caracteres.");
+                return (false, AppConstants.ErrorInvalidLeagueName);
             }
 
             // Validar nombre único de liga
             if (await leagueRepository.LeagueNameExistsAsync(dto.Name)){
-                return (false, "Ya existe una liga con ese nombre.");
+                return (false, AppConstants.ErrorLeagueNameExists);
             }
 
             // Validar cantidad de equipos
             if (!IsValidTeamCount(dto.MaxTeams)){
-                return (false, "La cantidad de equipos no es válida.");
+                return (false, AppConstants.ErrorInvalidTeamCount);
             }
 
             // Validar contraseña
             if (!IsValidPassword(dto.Password)){
-                return (false, "La contraseña no cumple el formato requerido.");
+                return (false, AppConstants.ErrorInvalidLeaguePassword);
             }
 
             // Validar existencia de temporada actual
             var season = await leagueRepository.GetCurrentSeasonAsync();
             if (season == null){
-                return (false, "No hay una temporada actual activa.");
+                return (false, AppConstants.ErrorNoActiveSeason);
             }
 
             // Validar existencia de alias del comisionado
             if (await leagueRepository.AliasExistsAsync(dto.CommissionerAlias)){
-                return (false, "El alias del equipo ya existe en el sistema. Intente con un nombre de equipo diferente.");
+                return (false, AppConstants.ErrorTeamAliasExists);
             }
 
             return (true, null);
@@ -74,8 +75,8 @@ namespace NFLFantasy.Api.Validators
         /// </summary>
         public static async Task<(bool IsValid, string? Error, League? League)> ValidateJoinLeagueAsync(
             int userId,
-            NFLFantasy.Api.DTO.JoinLeagueDto dto,
-            NFLFantasy.Api.Data.FantasyContext context)
+            JoinLeagueDto dto,
+            FantasyContext context)
         {
             // Validar existencia de la liga y contraseña
             var league = await context.Leagues
@@ -84,30 +85,30 @@ namespace NFLFantasy.Api.Validators
 
             // Valida que la liga exista
             if (league == null)
-                return (false, "La liga no existe.", null);
+                return (false, AppConstants.ErrorLeagueNotFound, null);
 
             // Valida que la liga esté activa
             if (!league.IsActive)
-                return (false, "La liga no está activa.", null);
+                return (false, AppConstants.ErrorLeagueInactive, null);
 
             // Valida la contraseña
             if (!PasswordHelper.VerifyPassword(dto.Password, league.PasswordHash))
-                return (false, "La contraseña es incorrecta.", null);
+                return (false, AppConstants.ErrorIncorrectPassword, null);
 
             // Valida que haya cupos
             if (league.Teams.Count >= league.MaxTeams)
-                return (false, "No hay cupos disponibles en la liga.", null);
+                return (false, AppConstants.ErrorLeagueFull, null);
 
             // Valida que el alias y nombre de equipo sean únicos en la liga
             if (league.Teams.Any(t => t.Alias == dto.Alias))
-                return (false, "El alias ya existe en la liga. Elige otro.", null);
+                return (false, AppConstants.ErrorAliasExistsInLeague, null);
 
             if (league.Teams.Any(t => t.TeamName == dto.TeamName))
-                return (false, "El nombre de equipo ya existe en la liga. Elige otro.", null);
+                return (false, AppConstants.ErrorTeamNameExistsInLeague, null);
 
             // Valida que el usuario no pertenezca ya a la liga
             if (league.Teams.Any(t => t.UserId == userId))
-                return (false, "Ya perteneces a esta liga.", null);
+                return (false, AppConstants.ErrorUserAlreadyInLeague, null);
 
             return (true, null, league);
 

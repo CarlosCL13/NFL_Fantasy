@@ -18,7 +18,7 @@ import { DateValidators } from '../../../shared/validators/date.validators';
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './season-create.component.html',
-  styleUrl: './season-create.component.scss'
+  styleUrl: './season-create.component.scss',
 })
 export class SeasonCreateComponent {
   seasonForm: FormGroup;
@@ -37,6 +37,11 @@ export class SeasonCreateComponent {
     this.seasonForm = this.createSeasonForm();
     this.setupNameValidation();
     this.loadCurrentSeasonInfo();
+    setTimeout(() => {
+      console.log('FORM STATUS:', this.seasonForm.status);
+      console.log('Form errors:', this.seasonForm.errors);
+      console.log('isCurrent disabled:', this.seasonForm.get('isCurrent')?.disabled);
+    });
   }
 
   /**
@@ -45,21 +50,16 @@ export class SeasonCreateComponent {
    * @returns FormGroup configurado para crear temporada
    */
   private createSeasonForm(): FormGroup {
-    return this.formBuilder.group({
-      name: ['', [
-        Validators.required, 
-        Validators.minLength(1), 
-        Validators.maxLength(100)
-      ]],
-      weeksCount: [17, [
-        Validators.required, 
-        Validators.min(1), 
-        Validators.max(30)
-      ]],
-      startDate: ['', Validators.required],
-      endDate: ['', Validators.required],
-      isCurrent: [false]
-    }, { validators: DateValidators.endDateAfterStartDate('startDate', 'endDate') });
+    return this.formBuilder.group(
+      {
+        name: ['', [Validators.required, Validators.minLength(1), Validators.maxLength(100)]],
+        weeksCount: [17, [Validators.required, Validators.min(1), Validators.max(30)]],
+        startDate: ['', Validators.required],
+        endDate: ['', Validators.required],
+        isCurrent: [false],
+      },
+      { validators: DateValidators.endDateAfterStartDate('startDate', 'endDate') }
+    );
   }
 
   /**
@@ -69,9 +69,9 @@ export class SeasonCreateComponent {
   onSubmit(): void {
     if (this.seasonForm.invalid) {
       this.markFormGroupTouched();
-      
+
       let errorMessage = 'Por favor, corrija los siguientes errores:\n';
-      
+
       if (this.seasonForm.get('name')?.hasError('required')) {
         errorMessage += '- El nombre de la temporada es requerido\n';
       }
@@ -93,19 +93,19 @@ export class SeasonCreateComponent {
       if (this.seasonForm.errors?.['endDateBeforeStartDate']) {
         errorMessage += '- La fecha de fin debe ser posterior a la fecha de inicio\n';
       }
-      
+
       alert(errorMessage);
       return;
     }
 
     this.isSubmitting = true;
-    
+
     const createSeasonDto: CreateSeasonDto = {
       name: this.seasonForm.get('name')?.value,
       weeksCount: this.seasonForm.get('weeksCount')?.value,
       startDate: new Date(this.seasonForm.get('startDate')?.value),
       endDate: new Date(this.seasonForm.get('endDate')?.value),
-      isCurrent: this.seasonForm.get('isCurrent')?.value
+      isCurrent: this.seasonForm.get('isCurrent')?.value,
     };
 
     this.seasonService.createSeason(createSeasonDto).subscribe({
@@ -120,7 +120,7 @@ export class SeasonCreateComponent {
       },
       complete: () => {
         this.isSubmitting = false;
-      }
+      },
     });
   }
 
@@ -128,7 +128,7 @@ export class SeasonCreateComponent {
    * Marca todos los campos del formulario como tocados para mostrar errores
    */
   private markFormGroupTouched(): void {
-    Object.keys(this.seasonForm.controls).forEach(key => {
+    Object.keys(this.seasonForm.controls).forEach((key) => {
       this.seasonForm.get(key)?.markAsTouched();
     });
   }
@@ -150,19 +150,23 @@ export class SeasonCreateComponent {
    */
   getFieldErrorMessage(fieldName: string): string {
     const field = this.seasonForm.get(fieldName);
-    
+
     if (field?.errors?.['required']) {
       return `El campo ${fieldName} es obligatorio`;
     }
-    
+
     if (field?.errors?.['minlength'] || field?.errors?.['min']) {
-      return `El ${fieldName} debe tener al menos ${field.errors['minlength']?.requiredLength || field.errors['min']?.min} caracteres/valor`;
+      return `El ${fieldName} debe tener al menos ${
+        field.errors['minlength']?.requiredLength || field.errors['min']?.min
+      } caracteres/valor`;
     }
-    
+
     if (field?.errors?.['maxlength'] || field?.errors?.['max']) {
-      return `El ${fieldName} no debe exceder ${field.errors['maxlength']?.requiredLength || field.errors['max']?.max} caracteres/valor`;
+      return `El ${fieldName} no debe exceder ${
+        field.errors['maxlength']?.requiredLength || field.errors['max']?.max
+      } caracteres/valor`;
     }
-    
+
     return 'Campo inválido';
   }
 
@@ -170,12 +174,13 @@ export class SeasonCreateComponent {
    * Configura la validación en tiempo real del nombre con debounce
    */
   private setupNameValidation(): void {
-    this.seasonForm.get('name')?.valueChanges
-      .pipe(
+    this.seasonForm
+      .get('name')
+      ?.valueChanges.pipe(
         debounceTime(500), // Espera 500ms después del último cambio
         distinctUntilChanged() // Solo procesa si el valor cambió
       )
-      .subscribe(name => {
+      .subscribe((name) => {
         if (name && name.length >= 3) {
           this.checkNameAvailability(name);
         } else {
@@ -203,7 +208,7 @@ export class SeasonCreateComponent {
         console.error('Error verificando nombre:', error);
         this.nameCheckMessage = 'Error verificando disponibilidad';
         this.isCheckingName = false;
-      }
+      },
     });
   }
 
@@ -224,39 +229,33 @@ export class SeasonCreateComponent {
           this.currentSeasonInfo = null;
         } else if (error.status === 500) {
           // Error del servidor, probablemente base de datos vacía
-          console.warn('Error del servidor al obtener temporada actual. Es probable que no haya temporadas en la base de datos.');
+          console.warn(
+            'Error del servidor al obtener temporada actual. Es probable que no haya temporadas en la base de datos.'
+          );
           this.currentSeasonInfo = null;
         } else {
           // Otros errores
           this.currentSeasonInfo = null;
         }
         this.updateCurrentSeasonControlState();
-      }
+      },
     });
   }
 
   /**
    * Actualiza el estado del control isCurrent basado en la información de temporada actual
+   * El checkbox siempre está habilitado para permitir cambiar la temporada actual
    */
   private updateCurrentSeasonControlState(): void {
     const isCurrentControl = this.seasonForm.get('isCurrent');
     if (!isCurrentControl) return;
 
-    if (this.currentSeasonInfo && !isCurrentControl.value) {
-      // Si hay una temporada actual y el checkbox no está marcado, deshabilitar
-      // Usar { emitEvent: false } para evitar el bucle infinito
-      if (isCurrentControl.enabled) {
-        isCurrentControl.disable({ emitEvent: false });
-      }
-    } else {
-      // Si no hay temporada actual o el checkbox está marcado, habilitar
-      if (isCurrentControl.disabled) {
-        isCurrentControl.enable({ emitEvent: false });
-      }
+    // El checkbox siempre debe estar habilitado
+    // La lógica de desactivar la temporada anterior se maneja en el backend
+    if (isCurrentControl.disabled) {
+      isCurrentControl.enable({ emitEvent: false });
     }
   }
-
-
 
   /**
    * Verifica si se puede marcar como temporada actual
@@ -274,6 +273,8 @@ export class SeasonCreateComponent {
     if (!this.currentSeasonInfo) {
       return '';
     }
-    return `Temporada actual: "${this.currentSeasonInfo.name}" (${new Date(this.currentSeasonInfo.startDate).getFullYear()})`;
+    return `Temporada actual: "${this.currentSeasonInfo.name}" (${new Date(
+      this.currentSeasonInfo.startDate
+    ).getFullYear()})`;
   }
 }

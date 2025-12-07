@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using NFLFantasy.Api.Data;
 using NFLFantasy.Api.Models;
 using NFLFantasy.Api.DTO;
-using NFLFantasy.Api.Repositories;
+using NFLFantasy.Api.DataAccessLayer.Repositories;
 
 namespace NFLFantasy.Api.Validators
 {
@@ -11,18 +11,18 @@ namespace NFLFantasy.Api.Validators
         /// <summary>
         /// Valida los datos para crear un nuevo usuario.
         /// </summary>
-        public static async Task<(bool IsValid, string? ErrorMessage)> ValidateCreateUserAsync(RegisterUserDto dto, UserRepository repository)
+        public static async Task<(bool IsValid, string? ErrorMessage)> ValidateCreateUserAsync(RegisterUserDto dto, IUserRepository repository)
         {
             // Verificar que el correo no exista
             if (await repository.EmailExistsAsync(dto.Email))
             {
-                return (false, "Ya existe un usuario con este correo electrónico.");
+                return (false, AppConstants.ErrorEmailAlreadyRegistered);
             }
 
             // Verificar que el alias no exista
             if (await repository.AliasExistsAsync(dto.Alias))
             {
-                return (false, "Ya existe un usuario con este alias.");
+                return (false, AppConstants.ErrorAliasInUse);
             }
 
             // Validación de campos obligatorios

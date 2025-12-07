@@ -1,48 +1,173 @@
 using NFLFantasy.Api.DTO;
 using NFLFantasy.Api.Data;
+using NFLFantasy.Api.DataAccessLayer.Repositories;
+using NFLFantasy.Api.DataAccessLayer.StorageManagement;
+using NFLFantasy.Api.DataAccessLayer.FileManagement;
+using NFLFantasy.Api.Validators;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;
 using SixLabors.ImageSharp.Formats.Png;
-using NFLFantasy.Api.Repositories;
-using NFLFantasy.Api.Validators;
 
 
 namespace NFLFantasy.Api.Services
 {
     public class NflPlayerBulkService
     {
-        private readonly NflPlayerRepository _repository;
-        private readonly NflPlayerValidator _validator;
+        private readonly NflPlayerService _playerService;
+        private readonly IJsonFileHandler _jsonFileService;
         private readonly FantasyContext _context;
-        public NflPlayerBulkService(NflPlayerRepository repository, NflPlayerValidator validator, FantasyContext context)
+        private readonly IDirectoryManager _directoryManager;
+        private readonly NflPlayerValidator _nflPlayerValidator;
+        private readonly INflPlayerRepository _nflPlayerRepository;
+
+        public NflPlayerBulkService(
+            NflPlayerService playerService,
+            IJsonFileHandler jsonFileService,
+            FantasyContext context,
+            IDirectoryManager directoryManager,
+            NflPlayerValidator nflPlayerValidator,
+            INflPlayerRepository nflPlayerRepository)
         {
-            _repository = repository;
-            _validator = validator;
+            _playerService = playerService;
+            _jsonFileService = jsonFileService;
             _context = context;
+            _directoryManager = directoryManager;
+            _nflPlayerValidator = nflPlayerValidator;
+            _nflPlayerRepository = nflPlayerRepository;
         }
 
+        /// <summary>
+        /// Maneja la carga masiva de jugadores NFL desde un archivo JSON subido.
+        /// </summary>
+        public async Task<BulkUploadResult> HandleBulkUploadAsync(IFormFile file)
+        {
+            // Validar archivo
+            if (file == null || file.Length == 0)
+                return new BulkUploadResult { Success = false, Errors = new List<string> { "Debe adjuntar un archivo JSON." } };
+
+            // Leer y deserializar JSON
+            List<NflPlayerBulkDto>? players;
+            using (var stream = new StreamReader(file.OpenReadStream()))
+            {
+                var json = await stream.ReadToEndAsync();
+                try
+                {
+                    players = System.Text.Json.JsonSerializer.Deserialize<List<NflPlayerBulkDto>>(json);
+                }
+                catch
+                {
+                    return new BulkUploadResult { Success = false, Errors = new List<string> { "El archivo no tiene formato JSON válido." } };
+                }
+            }
+            if (players == null || players.Count == 0)
+                return new BulkUploadResult { Success = false, Errors = new List<string> { "El archivo no contiene datos de jugadores." } };
+
+            // Manejo de carpetas y nombres
+            var uploadsFolder = _directoryManager.GetNflPlayersImagesPath();
+            var jsonUploadsFolder = _directoryManager.GetNflPlayersUploadsPath();
+            var jsonProcessedFolder = _directoryManager.GetNflPlayersProcessedPath();
+            _directoryManager.EnsureDirectoryExists(jsonUploadsFolder);
+            _directoryManager.EnsureDirectoryExists(jsonProcessedFolder);
+
+            // Guardar el archivo JSON subido en wwwroot/uploads
+            var uniqueFileName = _directoryManager.GenerateUniqueFileName(Path.GetFileNameWithoutExtension(file.FileName), ".json");
+            var jsonUploadPath = Path.Combine(jsonUploadsFolder, uniqueFileName);
+            using (var fileStream = new FileStream(jsonUploadPath, FileMode.Create))
+            {
+                await file.CopyToAsync(fileStream);
+            }
+
+            // Procesar jugadores y solo marcar como procesado exitoso si se insertan correctamente
+            return await ProcessBulkAsync(players, uploadsFolder, jsonUploadPath, jsonProcessedFolder);
+        }
+
+        /// <summary>
+        /// Procesa la carga masiva de jugadores NFL desde una lista de DTOs.
+        /// </summary>
         public async Task<BulkUploadResult> ProcessBulkAsync(List<NflPlayerBulkDto> players, string uploadsFolder, string originalFilePath, string processedFolder)
         {
+
             var errors = new List<string>();
-            var validPlayers = new List<NflPlayerBulkDto>();
-            int index = 1;
+            var successMessages = new List<string>();
+            var createdCount = 0;
+
+            // 1. Validar imágenes usando el método dedicado
+            errors.AddRange(ValidateImageFilesExist(players));
+
+            // 2. Validar datos de los jugadores usando el validador
+            int idx = 1;
             foreach (var dto in players)
             {
-                // Adaptar el DTO de bulk a un DTO de creación estándar para reusar el validador
-                var createDto = new NflPlayerCreateDto
+                var playerDto = new NflPlayerCreateDto
                 {
                     Name = dto.Name,
                     PositionId = dto.PositionId,
-                    NflTeamId = dto.NflTeamId
+                    NflTeamId = dto.NflTeamId,
+                    Image = null! // No aplica para bulk
                 };
-                var (isValid, error) = _validator.ValidateCreate(createDto, _repository, requireImage: false);
-                if (!isValid)
+                var (isValid, errorMsg) = _nflPlayerValidator.ValidateCreate(playerDto, _nflPlayerRepository, requireImage: false);
+                if (!isValid && !string.IsNullOrWhiteSpace(errorMsg))
+                    errors.Add($"Jugador #{idx} ('{dto.Name}'): {errorMsg}");
+                idx++;
+            }
+
+            if (errors.Count > 0)
+                return await CreateErrorResult(errors, originalFilePath, processedFolder);
+
+            // 2. Si todo está validado, ahora sí guardar jugadores e imágenes dentro de la transacción
+            Directory.CreateDirectory(uploadsFolder);
+            using (var transaction = _context.Database.BeginTransaction())
+            {
+                try
                 {
-                    errors.Add($"Jugador #{index} ('{dto.Name}'): {error}");
+                    idx = 1;
+                    foreach (var dto in players)
+                    {
+                        var (playerCreated, playerErrors, playerSuccess) = await ProcessSinglePlayerAsync(dto, uploadsFolder, idx);
+
+                        if (playerCreated)
+                        {
+                            createdCount++;
+                            successMessages.AddRange(playerSuccess);
+                        }
+
+                        errors.AddRange(playerErrors);
+                        idx++;
+                    }
+
+                    if (errors.Count > 0)
+                    {
+                        transaction.Rollback();
+                        return await CreateErrorResult(errors, originalFilePath, processedFolder);
+                    }
+
+                    await _context.SaveChangesAsync();
+                    transaction.Commit();
                 }
-                else if (string.IsNullOrWhiteSpace(dto.ImagePath))
+                catch (Exception ex)
+                {
+                    transaction.Rollback();
+                    return await CreateErrorResult(new List<string> { ex.Message }, originalFilePath, processedFolder);
+                }
+            }
+
+            // Solo aquí se marca como procesado exitoso
+            return await CreateSuccessResult(createdCount, successMessages, originalFilePath, processedFolder);
+        }
+
+        /// <summary>
+        /// Valida que todas las imágenes existan en el disco antes de procesarlas.
+        /// </summary>
+        private List<string> ValidateImageFilesExist(List<NflPlayerBulkDto> players)
+        {
+            var errors = new List<string>();
+            int index = 1;
+            
+            foreach (var dto in players)
+            {
+                if (string.IsNullOrWhiteSpace(dto.ImagePath))
                 {
                     errors.Add($"Jugador #{index} ('{dto.Name}'): La ruta de la imagen es obligatoria.");
                 }
@@ -50,115 +175,90 @@ namespace NFLFantasy.Api.Services
                 {
                     errors.Add($"Jugador #{index} ('{dto.Name}'): No se encontró el archivo de imagen en la ruta especificada: {dto.ImagePath}");
                 }
-                else
-                {
-                    validPlayers.Add(dto);
-                }
                 index++;
             }
-            if (errors.Count > 0)
-            {
-                return new BulkUploadResult
-                {
-                    Success = false,
-                    Errors = errors,
-                    CreatedCount = 0
-                };
-            }
-            // Lógica de guardado, thumbnails y transacción
-            var createdPlayers = new List<NFLFantasy.Api.Models.NflPlayer>();
+            
+            return errors;
+        }
+
+        /// <summary>
+        /// Procesa un solo jugador dentro de la transacción.
+        /// Retorna: (playerCreated, errors, successMessages)
+        /// </summary>
+        private async Task<(bool PlayerCreated, List<string> Errors, List<string> SuccessMessages)> ProcessSinglePlayerAsync(
+            NflPlayerBulkDto dto, 
+            string uploadsFolder, 
+            int index)
+        {
+            var errors = new List<string>();
             var successMessages = new List<string>();
-            Directory.CreateDirectory(uploadsFolder);
-            using (var transaction = _context.Database.BeginTransaction())
-            {
-                try
-                {
-                    int idx = 1;
-                    foreach (var dto in validPlayers)
-                    {
-                        // Leer imagen desde ruta local
-                        byte[] imageBytes;
-                        try
-                        {
-                            imageBytes = await File.ReadAllBytesAsync(dto.ImagePath);
-                        }
-                        catch
-                        {
-                            throw new Exception($"Jugador #{idx} ('{dto.Name}'): No se pudo leer la imagen desde la ruta especificada: {dto.ImagePath}");
-                        }
-                        var uniqueFileName = $"{Guid.NewGuid()}_{dto.Name}.jpg";
-                        var filePath = Path.Combine(uploadsFolder, uniqueFileName);
-                        var thumbnailFileName = $"thumb_{Guid.NewGuid()}.png";
-                        var thumbnailPath = Path.Combine(uploadsFolder, thumbnailFileName);
-
-                        await File.WriteAllBytesAsync(filePath, imageBytes);
-
-                        // Generar thumbnail
-                        using (var image = SixLabors.ImageSharp.Image.Load(filePath))
-                        {
-                            image.Mutate(x => x.Resize(new SixLabors.ImageSharp.Size(100, 100)));
-                            using (var thumbStream = new FileStream(thumbnailPath, FileMode.Create))
-                            {
-                                image.Save(thumbStream, new SixLabors.ImageSharp.Formats.Png.PngEncoder());
-                            }
-                        }
-
-                        var player = new NFLFantasy.Api.Models.NflPlayer
-                        {
-                            Name = dto.Name,
-                            PositionId = dto.PositionId,
-                            NflTeamId = dto.NflTeamId,
-                            ImageUrl = uniqueFileName,
-                            ThumbnailUrl = thumbnailFileName,
-                            CreatedAt = DateTime.UtcNow,
-                            IsActive = true
-                        };
-                        _context.NflPlayers.Add(player);
-                        createdPlayers.Add(player);
-                        successMessages.Add($"Jugador '{dto.Name}' creado correctamente.");
-                        idx++;
-                    }
-                    await _context.SaveChangesAsync();
-                    transaction.Commit();
-                }
-                catch (Exception ex)
-                {
-                    transaction.Rollback();
-                    return new BulkUploadResult
-                    {
-                        Success = false,
-                        Errors = new List<string> { ex.Message },
-                        CreatedCount = 0
-                    };
-                }
-            }
-            // Mover archivo JSON a carpeta de procesados con formato <nombre>__<timestamp>.json
-            string? moveWarning = null;
+            
             try
             {
-                Directory.CreateDirectory(processedFolder);
-                var originalName = Path.GetFileNameWithoutExtension(originalFilePath);
-                var timestamp = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
-                var processedFileName = $"{originalName}__{timestamp}.json";
-                var processedPath = Path.Combine(processedFolder, processedFileName);
-                if (File.Exists(originalFilePath))
+                // Leer imagen desde disco
+                byte[] imageBytes = await File.ReadAllBytesAsync(dto.ImagePath);
+                
+                // Crear DTO para validación
+                var playerDto = new NflPlayerCreateDto
                 {
-                    File.Move(originalFilePath, processedPath);
+                    Name = dto.Name,
+                    PositionId = dto.PositionId,
+                    NflTeamId = dto.NflTeamId,
+                    Image = null! // No aplica para bulk
+                };
+                
+                // Usar el servicio individual para crear el jugador
+                var (success, error) = await _playerService.CreateNflPlayerAsync(playerDto, imageBytes, dto.Name, uploadsFolder);
+                
+                if (!success)
+                {
+                    errors.Add($"Jugador #{index} ('{dto.Name}'): {error}");
+                    return (false, errors, successMessages);
                 }
+                
+                successMessages.Add($"Jugador '{dto.Name}' creado correctamente.");
+                return (true, errors, successMessages);
             }
             catch (Exception ex)
             {
-                moveWarning = $"Advertencia: El archivo JSON no pudo moverse a la carpeta de procesados. Detalle: {ex.Message}";
+                errors.Add($"Jugador #{index} ('{dto.Name}'): Error al procesar - {ex.Message}");
+                return (false, errors, successMessages);
             }
+        }
 
-            return new BulkUploadResult
+        /// <summary>
+        /// Crea un resultado de error y mueve el archivo con sufijo _ERROR.
+        /// </summary>
+        private Task<BulkUploadResult> CreateErrorResult(List<string> errors, string originalFilePath, string processedFolder)
+        {
+            var (success, processedPath, errorMsg) = _jsonFileService.MoveToProcessedFolder(originalFilePath, processedFolder, hasErrors: true);
+            
+            return Task.FromResult(new BulkUploadResult
+            {
+                Success = false,
+                Errors = errors,
+                CreatedCount = 0,
+                ProcessedFilePath = processedPath,
+                Warning = errorMsg
+            });
+        }
+
+        /// <summary>
+        /// Crea un resultado exitoso y mueve el archivo sin sufijo de error.
+        /// </summary>
+        private Task<BulkUploadResult> CreateSuccessResult(int createdCount, List<string> successMessages, string originalFilePath, string processedFolder)
+        {
+            var (moveSuccess, movedPath, moveWarning) = _jsonFileService.MoveToProcessedFolder(originalFilePath, processedFolder, hasErrors: false);
+
+            return Task.FromResult(new BulkUploadResult
             {
                 Success = true,
                 Errors = new List<string>(),
-                CreatedCount = createdPlayers.Count,
+                CreatedCount = createdCount,
                 SuccessMessages = successMessages,
-                Warning = moveWarning
-            };
+                Warning = moveWarning,
+                ProcessedFilePath = movedPath
+            });
         }
     }
 
@@ -167,10 +267,11 @@ namespace NFLFantasy.Api.Services
     /// </summary>
     public class BulkUploadResult
     {
-    public bool Success { get; set; }
-    public List<string> Errors { get; set; } = new();
-    public int CreatedCount { get; set; }
-    public List<string> SuccessMessages { get; set; } = new();
-    public string? Warning { get; set; }
+        public bool Success { get; set; }
+        public List<string> Errors { get; set; } = new();
+        public int CreatedCount { get; set; }
+        public List<string> SuccessMessages { get; set; } = new();
+        public string? Warning { get; set; }
+        public string? ProcessedFilePath { get; set; }
     }
 }

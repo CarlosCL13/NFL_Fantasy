@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using NFLFantasy.Api.Data;
 using NFLFantasy.Api.Models;
 using NFLFantasy.Api.DTO;
-using NFLFantasy.Api.Repositories;
+using NFLFantasy.Api.DataAccessLayer.Repositories;
 
 namespace NFLFantasy.Api.Validators
 {
@@ -14,7 +14,7 @@ namespace NFLFantasy.Api.Validators
         /// Validaciones centralizadas para la creación de equipo de la NFL.
         /// </summary>
         public static async Task<(bool IsValid, string ErrorMessage)> ValidateCreateNflTeamAsync(
-            CreateNflTeamDto dto, NflTeamRepository repository)
+            CreateNflTeamDto dto, INflTeamRepository repository)
         {
             // Validar campos obligatorios
             if (string.IsNullOrWhiteSpace(dto.Name) || string.IsNullOrWhiteSpace(dto.City) || dto.Image == null)

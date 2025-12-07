@@ -74,6 +74,27 @@ namespace NFLFantasy.Api.Migrations
                     b.ToTable("DefaultScorings");
                 });
 
+            modelBuilder.Entity("NFLFantasy.Api.Models.Designacion", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Codigo")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Descripcion")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Designaciones");
+                });
+
             modelBuilder.Entity("NFLFantasy.Api.Models.League", b =>
                 {
                     b.Property<int>("LeagueId")
@@ -246,6 +267,52 @@ namespace NFLFantasy.Api.Migrations
                     b.HasKey("NflTeamId");
 
                     b.ToTable("NflTeams");
+                });
+
+            modelBuilder.Entity("NFLFantasy.Api.Models.PlayerNews", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Autor")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Cambios")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("DesignacionId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("FechaCreacion")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("HoraCreacion")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsLesion")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("PlayerId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Resumen")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Texto")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DesignacionId");
+
+                    b.ToTable("PlayerNews");
                 });
 
             modelBuilder.Entity("NFLFantasy.Api.Models.Position", b =>
@@ -558,6 +625,15 @@ namespace NFLFantasy.Api.Migrations
                     b.Navigation("NflTeam");
 
                     b.Navigation("Position");
+                });
+
+            modelBuilder.Entity("NFLFantasy.Api.Models.PlayerNews", b =>
+                {
+                    b.HasOne("NFLFantasy.Api.Models.Designacion", "Designacion")
+                        .WithMany()
+                        .HasForeignKey("DesignacionId");
+
+                    b.Navigation("Designacion");
                 });
 
             modelBuilder.Entity("NFLFantasy.Api.Models.Team", b =>

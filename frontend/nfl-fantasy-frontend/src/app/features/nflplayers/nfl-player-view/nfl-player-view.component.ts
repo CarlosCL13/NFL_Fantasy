@@ -124,6 +124,13 @@ export class NflPlayerViewComponent implements OnInit {
         this.submitting = false;
         this.loadNews(this.selectedPlayer.nflPlayerId);
         alert('Noticia agregada correctamente.');
+
+        this.noticia = {
+          texto: '',
+          resumen: '',
+          isLesion: false,
+          designacionId: null,
+        };
       },
       error: (err) => {
         this.submitting = false;

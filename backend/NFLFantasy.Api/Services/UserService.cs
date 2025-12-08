@@ -191,8 +191,8 @@ namespace NFLFantasy.Api.Services
                 return null;
             }
 
+            _directoryManager.EnsureAllUsersDirectoriesExist();
             var uploadsFolder = _directoryManager.GetUsersImagesPath();
-            _directoryManager.EnsureDirectoryExists(uploadsFolder);
 
             var uniqueFileName = $"{Guid.NewGuid()}_{image.FileName}";
             var filePath = Path.Combine(uploadsFolder, uniqueFileName);

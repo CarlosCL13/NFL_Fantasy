@@ -41,13 +41,25 @@ namespace NFLFantasy.Api.Services
         }
 
         /// <summary>
-        /// Crea un jugador NFL desde byte array (para bulk upload).
+        /// Crea un jugador NFL desde byte array (para bulk upload). Valida SOLO si se usa este método directamente.
         /// </summary>
         public async Task<(bool Success, string? Error)> CreateNflPlayerAsync(NflPlayerCreateDto dto, byte[] imageBytes, string imageName, string uploadsFolder)
         {
+            // Validar primero todos los datos (por si se usa fuera del bulk)
+            var (isValid, error) = _validator.ValidateCreate(dto, _repository, requireImage: false);
+            if (!isValid)
+                return (false, error);
+
+            return await CreateNflPlayerInternalAsync(dto, imageBytes, imageName, uploadsFolder);
+        }
+
+        /// <summary>
+        /// Método público para crear un jugador NFL desde byte array SIN validación (solo para uso interno en bulk, asume datos ya validados).
+        /// </summary>
+        public async Task<(bool Success, string? Error)> CreateNflPlayerInternalAsync(NflPlayerCreateDto dto, byte[] imageBytes, string imageName, string uploadsFolder)
+        {
             // Procesar imagen y generar thumbnail usando el servicio compartido
             var (uniqueFileName, thumbnailFileName) = await _imageService.ProcessImageAsync(imageBytes, imageName, uploadsFolder);
-            
             return await CreatePlayerInternalAsync(dto, uniqueFileName, thumbnailFileName, requireImageValidation: false);
         }
 
@@ -60,10 +72,7 @@ namespace NFLFantasy.Api.Services
             string thumbnailFileName, 
             bool requireImageValidation)
         {
-            var (isValid, error) = _validator.ValidateCreate(dto, _repository, requireImageValidation);
-            if (!isValid)
-                return (false, error);
-
+            // NO validar aquí, solo guardar. Asume que los datos ya fueron validados en los métodos públicos o en el bulk.
             var player = new NflPlayer
             {
                 Name = dto.Name,
@@ -74,7 +83,7 @@ namespace NFLFantasy.Api.Services
                 CreatedAt = DateTime.UtcNow,
                 IsActive = true
             };
-            
+
             await _repository.AddAsync(player);
             return (true, null);
         }

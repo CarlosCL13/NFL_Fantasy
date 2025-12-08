@@ -11,10 +11,16 @@ public interface IDirectoryManager
     string GetNflTeamsImagesPath();
     string GetUsersImagesPath();
     void EnsureDirectoryExists(string path);
+    void EnsureAllNflPlayersDirectoriesExist();
+    void EnsureAllNflTeamsDirectoriesExist();
+    void EnsureAllUsersDirectoriesExist();
     string GenerateUniqueFileName(string baseName, string extension);
     string GenerateUniqueFileName(string baseName, string extension, bool hasError);
 }
 
+/// <summary>
+/// Implementación del manejador de directorios.
+/// </summary>
 public class DirectoryManager : IDirectoryManager
 {
     private readonly IWebHostEnvironment _environment;
@@ -24,19 +30,19 @@ public class DirectoryManager : IDirectoryManager
         _environment = environment;
     }
 
-    // NFL Players directories
+    // NFL Players directorios
     public string GetNflPlayersImagesPath() => Path.Combine(_environment.WebRootPath, "images", "nflplayers");
     public string GetNflPlayersUploadsPath() => Path.Combine(_environment.WebRootPath, "uploads");
     public string GetNflPlayersProcessedPath() => Path.Combine(_environment.WebRootPath, "processed");
 
-    // NFL Teams directories
+    // NFL Teams directorios
     public string GetNflTeamsImagesPath() => Path.Combine(_environment.WebRootPath, "images", "nflteams");
 
-    // Users directories
+    // Users directorios
     public string GetUsersImagesPath() => Path.Combine(_environment.WebRootPath, "images", "users");
 
     /// <summary>
-    /// Ensures a directory exists, creating it if necessary
+    /// Asegura que un directorio exista, creándolo si es necesario
     /// </summary>
     public void EnsureDirectoryExists(string path)
     {
@@ -47,7 +53,33 @@ public class DirectoryManager : IDirectoryManager
     }
 
     /// <summary>
-    /// Generates a unique filename with timestamp
+    /// Asegura que todos los directorios necesarios para los jugadores NFL existan.
+    /// </summary>
+    public void EnsureAllNflPlayersDirectoriesExist()
+    {
+        EnsureDirectoryExists(GetNflPlayersImagesPath());
+        EnsureDirectoryExists(GetNflPlayersUploadsPath());
+        EnsureDirectoryExists(GetNflPlayersProcessedPath());
+    }
+
+    /// <summary>
+    /// Asegura que todos los directorios necesarios para los equipos NFL existan.
+    /// </summary>
+    public void EnsureAllNflTeamsDirectoriesExist()
+    {
+        EnsureDirectoryExists(GetNflTeamsImagesPath());
+    }
+
+    /// <summary>
+    /// Asegura que todos los directorios necesarios para los usuarios existan.
+    /// </summary>
+    public void EnsureAllUsersDirectoriesExist()
+    {
+        EnsureDirectoryExists(GetUsersImagesPath());
+    }
+
+    /// <summary>
+    /// Genera un nombre de archivo único con marca de tiempo
     /// </summary>
     public string GenerateUniqueFileName(string baseName, string extension)
     {
@@ -56,7 +88,7 @@ public class DirectoryManager : IDirectoryManager
     }
 
     /// <summary>
-    /// Generates a unique filename with timestamp and optional error suffix
+    /// Genera un nombre de archivo único con marca de tiempo y sufijo de error opcional
     /// </summary>
     public string GenerateUniqueFileName(string baseName, string extension, bool hasError)
     {

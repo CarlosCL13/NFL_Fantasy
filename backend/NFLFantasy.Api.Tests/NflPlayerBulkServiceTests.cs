@@ -389,5 +389,329 @@ namespace NFLFantasy.Api.Tests
                     System.IO.File.Delete("img.png");
             }
         }
+
+        /// <summary>
+        /// Prueba que verifica que el método HandleBulkUploadAsync devuelve un error cuando la posición no existe.
+        /// </summary>
+        [Fact]
+        public async Task HandleBulkUploadAsync_ReturnsError_WhenPositionDoesNotExist()
+        {
+            // ARRANGE: Preparar escenario donde la posición no existe
+            // Este test valida que cuando la posición NFL no existe, se rechaza el jugador
+            
+            // 1. Crear directorios temporales
+            var uploadsDir = System.IO.Path.Combine("wwwroot", "uploads");
+            var processedDir = System.IO.Path.Combine("wwwroot", "processed");
+            System.IO.Directory.CreateDirectory(uploadsDir);
+            System.IO.Directory.CreateDirectory(processedDir);
+            
+            // 2. Crear validador
+            var validator = new NflPlayerValidator(null!);
+
+            // 3. Configurar mocks del repositorio
+            // El equipo SÍ existe
+            _repositoryMock.Setup(r => r.NflTeamExists(It.IsAny<int>())).Returns(true);
+            // Pero la posición NO existe - esto causará el error
+            _repositoryMock.Setup(r => r.PositionExists(It.IsAny<int>())).Returns(false);
+
+            // 4. Crear archivo JSON con datos válidos excepto por la posición
+            var jsonContent = "[{\"Name\":\"Test Player\",\"PositionId\":999,\"NflTeamId\":1,\"ImagePath\":\"img.png\"}]";
+            var jsonBytes = System.Text.Encoding.UTF8.GetBytes(jsonContent);
+            var stream = new System.IO.MemoryStream(jsonBytes);
+            
+            // 5. Configurar mock de IFormFile
+            var fileMock = new Mock<IFormFile>();
+            fileMock.Setup(f => f.Length).Returns(jsonBytes.Length);
+            fileMock.Setup(f => f.FileName).Returns("jugadores.json");
+            fileMock.Setup(f => f.OpenReadStream()).Returns(stream);
+            fileMock.Setup(f => f.CopyToAsync(It.IsAny<System.IO.Stream>(), default)).Returns<System.IO.Stream, System.Threading.CancellationToken>((target, token) => {
+                stream.Position = 0;
+                return stream.CopyToAsync(target, token);
+            });
+
+            // 6. Configurar mocks de gestión de directorios
+            var jsonUploadsFolder = uploadsDir;
+            var jsonProcessedFolder = processedDir;
+            _directoryManagerMock.Setup(d => d.EnsureAllNflPlayersDirectoriesExist());
+            _directoryManagerMock.Setup(d => d.GetNflPlayersUploadsPath()).Returns(jsonUploadsFolder);
+            _directoryManagerMock.Setup(d => d.GetNflPlayersProcessedPath()).Returns(jsonProcessedFolder);
+            _directoryManagerMock.Setup(d => d.GenerateUniqueFileName(It.IsAny<string>(), ".json")).Returns("jugadores_test.json");
+
+            // 7. Configurar rutas y manejador de archivos
+            var testJsonPath = System.IO.Path.Combine(uploadsDir, "jugadores_test.json");
+            var processedJsonPath = System.IO.Path.Combine(processedDir, "jugadores_test.json");
+            _jsonFileHandlerMock.Setup(j => j.MoveToProcessedFolder(It.IsAny<string>(), It.IsAny<string>(), true)).Returns((true, processedJsonPath, null));
+
+            // 8. Crear servicio
+            var service = CreateService(validator);
+
+            try
+            {
+                // ACT: Ejecutar el método con posición inválida
+                var result = await service.HandleBulkUploadAsync(fileMock.Object);
+
+                // ASSERT: Verificar que se rechaza por posición inexistente
+                // 9. Debe fallar porque la posición no existe
+                result.Success.Should().BeFalse();
+                
+                // 10. Verificar mensaje de error sobre posición
+                try
+                {
+                    result.Errors.Should().ContainSingle(e => e.Contains("La posición seleccionada no existe"));
+                }
+                catch
+                {
+                    // Mostrar errores reales para debugging
+                    System.Console.WriteLine("Errores reales: " + string.Join(" | ", result.Errors));
+                    throw;
+                }
+            }
+            finally
+            {
+                // CLEANUP: Limpiar archivos temporales
+                if (System.IO.File.Exists(testJsonPath))
+                    System.IO.File.Delete(testJsonPath);
+                if (System.IO.File.Exists(processedJsonPath))
+                    System.IO.File.Delete(processedJsonPath);
+            }
+        }
+
+        /// <summary>
+        /// Prueba que verifica el procesamiento parcial: algunos jugadores válidos y otros inválidos.
+        /// </summary>
+        [Fact]
+        public async Task HandleBulkUploadAsync_ProcessesPartially_WhenSomePlayersAreInvalid()
+        {
+            // ARRANGE: Preparar escenario con mezcla de datos válidos e inválidos
+            // Este test valida el comportamiento de "bulk" real: procesar múltiples jugadores
+            // donde algunos son válidos y otros no, esperando que se rechace TODO por transacción
+            
+            // 1. Crear directorios temporales
+            var uploadsDir = System.IO.Path.Combine("wwwroot", "uploads");
+            var processedDir = System.IO.Path.Combine("wwwroot", "processed");
+            System.IO.Directory.CreateDirectory(uploadsDir);
+            System.IO.Directory.CreateDirectory(processedDir);
+            
+            // 2. Crear validador
+            var validator = new NflPlayerValidator(null!);
+
+            // 3. Configurar mocks del repositorio
+            // Equipo 1 SÍ existe, Equipo 999 NO existe
+            _repositoryMock.Setup(r => r.NflTeamExists(1)).Returns(true);
+            _repositoryMock.Setup(r => r.NflTeamExists(999)).Returns(false);
+            // Todas las posiciones existen
+            _repositoryMock.Setup(r => r.PositionExists(It.IsAny<int>())).Returns(true);
+
+            // 4. Crear JSON con 3 jugadores: 2 válidos (equipo 1) y 1 inválido (equipo 999)
+            var jsonContent = @"[
+                {""Name"":""Player Valid 1"",""PositionId"":1,""NflTeamId"":1,""ImagePath"":""img1.png""},
+                {""Name"":""Player Invalid"",""PositionId"":1,""NflTeamId"":999,""ImagePath"":""img2.png""},
+                {""Name"":""Player Valid 2"",""PositionId"":1,""NflTeamId"":1,""ImagePath"":""img3.png""}
+            ]";
+            var jsonBytes = System.Text.Encoding.UTF8.GetBytes(jsonContent);
+            var stream = new System.IO.MemoryStream(jsonBytes);
+            
+            // 5. Configurar mock de IFormFile
+            var fileMock = new Mock<IFormFile>();
+            fileMock.Setup(f => f.Length).Returns(jsonBytes.Length);
+            fileMock.Setup(f => f.FileName).Returns("jugadores.json");
+            fileMock.Setup(f => f.OpenReadStream()).Returns(stream);
+            fileMock.Setup(f => f.CopyToAsync(It.IsAny<System.IO.Stream>(), default)).Returns<System.IO.Stream, System.Threading.CancellationToken>((target, token) => {
+                stream.Position = 0;
+                return stream.CopyToAsync(target, token);
+            });
+
+            // 6. Configurar mocks de gestión de directorios
+            var jsonUploadsFolder = uploadsDir;
+            var jsonProcessedFolder = processedDir;
+            _directoryManagerMock.Setup(d => d.EnsureAllNflPlayersDirectoriesExist());
+            _directoryManagerMock.Setup(d => d.GetNflPlayersUploadsPath()).Returns(jsonUploadsFolder);
+            _directoryManagerMock.Setup(d => d.GetNflPlayersProcessedPath()).Returns(jsonProcessedFolder);
+            _directoryManagerMock.Setup(d => d.GenerateUniqueFileName(It.IsAny<string>(), ".json")).Returns("jugadores_test.json");
+
+            // 7. Configurar rutas y manejador de archivos
+            var testJsonPath = System.IO.Path.Combine(uploadsDir, "jugadores_test.json");
+            var processedJsonPath = System.IO.Path.Combine(processedDir, "jugadores_test.json");
+            _jsonFileHandlerMock.Setup(j => j.MoveToProcessedFolder(It.IsAny<string>(), It.IsAny<string>(), true)).Returns((true, processedJsonPath, null));
+
+            // 8. Crear archivos de imagen fake para las validaciones
+            System.IO.File.WriteAllText("img1.png", "fake image 1");
+            System.IO.File.WriteAllText("img2.png", "fake image 2");
+            System.IO.File.WriteAllText("img3.png", "fake image 3");
+
+            // 9. Crear servicio
+            var service = CreateService(validator);
+
+            try
+            {
+                // ACT: Ejecutar procesamiento con datos mixtos
+                var result = await service.HandleBulkUploadAsync(fileMock.Object);
+
+                // ASSERT: Verificar que TODO falla por el jugador inválido
+                // 10. El resultado debe ser fallido porque hay al menos un error
+                result.Success.Should().BeFalse();
+                
+                // 11. Debe haber al menos un error del jugador con equipo inválido
+                result.Errors.Should().NotBeEmpty();
+                
+                // 12. El error debe mencionar al jugador #2 y el equipo inexistente
+                try
+                {
+                    result.Errors.Should().Contain(e => 
+                        e.Contains("Jugador #2") && 
+                        e.Contains("Player Invalid") && 
+                        e.Contains("equipo NFL")
+                    );
+                }
+                catch
+                {
+                    // Mostrar errores reales para debugging
+                    System.Console.WriteLine("Errores reales: " + string.Join(" | ", result.Errors));
+                    throw;
+                }
+                
+                // 13. No debe haberse creado ningún jugador (rollback transaccional)
+                result.CreatedCount.Should().Be(0);
+            }
+            finally
+            {
+                // CLEANUP: Limpiar archivos temporales
+                if (System.IO.File.Exists(testJsonPath))
+                    System.IO.File.Delete(testJsonPath);
+                if (System.IO.File.Exists(processedJsonPath))
+                    System.IO.File.Delete(processedJsonPath);
+                if (System.IO.File.Exists("img1.png"))
+                    System.IO.File.Delete("img1.png");
+                if (System.IO.File.Exists("img2.png"))
+                    System.IO.File.Delete("img2.png");
+                if (System.IO.File.Exists("img3.png"))
+                    System.IO.File.Delete("img3.png");
+            }
+        }
+
+        /// <summary>
+        /// Prueba que verifica que el rollback funciona cuando hay un error en medio del procesamiento.
+        /// </summary>
+        [Fact]
+        public async Task HandleBulkUploadAsync_RollsBackTransaction_WhenErrorOccursDuringProcessing()
+        {
+            // ARRANGE: Preparar escenario que simula error en medio del procesamiento
+            // Este test valida la integridad transaccional: si algo falla, nada se guarda
+            
+            // 1. Crear directorios temporales
+            var uploadsDir = System.IO.Path.Combine("wwwroot", "uploads");
+            var processedDir = System.IO.Path.Combine("wwwroot", "processed");
+            System.IO.Directory.CreateDirectory(uploadsDir);
+            System.IO.Directory.CreateDirectory(processedDir);
+            
+            // 2. Crear validador
+            var validator = new NflPlayerValidator(null!);
+
+            // 3. Configurar mock del DirectoryManager para retornar ruta de imágenes
+            _directoryManagerMock.Setup(d => d.GetNflPlayersImagesPath()).Returns(uploadsDir);
+
+            // 4. Configurar mocks del repositorio para validaciones exitosas
+            _repositoryMock.Setup(r => r.NflTeamExists(It.IsAny<int>())).Returns(true);
+            _repositoryMock.Setup(r => r.PositionExists(It.IsAny<int>())).Returns(true);
+
+            // 5. Configurar mock del NflPlayerService para simular:
+            // - Primera llamada: éxito
+            // - Segunda llamada: fallo (simula error en BD o procesamiento)
+            var callCount = 0;
+            _playerServiceMock.Setup(ps => ps.CreateNflPlayerInternalAsync(
+                It.IsAny<NflPlayerCreateDto>(),
+                It.IsAny<byte[]>(),
+                It.IsAny<string>(),
+                It.IsAny<string>()
+            )).ReturnsAsync(() => {
+                callCount++;
+                if (callCount == 1)
+                    return (true, (string?)null); // Primera llamada exitosa
+                else
+                    return (false, "Error simulado de base de datos"); // Segunda llamada falla
+            });
+
+            // 6. Crear JSON con 2 jugadores (ambos válidos en validación, pero el 2do fallará al crear)
+            var jsonContent = @"[
+                {""Name"":""Player 1"",""PositionId"":1,""NflTeamId"":1,""ImagePath"":""img1.png""},
+                {""Name"":""Player 2"",""PositionId"":1,""NflTeamId"":1,""ImagePath"":""img2.png""}
+            ]";
+            var jsonBytes = System.Text.Encoding.UTF8.GetBytes(jsonContent);
+            var stream = new System.IO.MemoryStream(jsonBytes);
+            
+            // 7. Configurar mock de IFormFile
+            var fileMock = new Mock<IFormFile>();
+            fileMock.Setup(f => f.Length).Returns(jsonBytes.Length);
+            fileMock.Setup(f => f.FileName).Returns("jugadores.json");
+            fileMock.Setup(f => f.OpenReadStream()).Returns(stream);
+            fileMock.Setup(f => f.CopyToAsync(It.IsAny<System.IO.Stream>(), default)).Returns<System.IO.Stream, System.Threading.CancellationToken>((target, token) => {
+                stream.Position = 0;
+                return stream.CopyToAsync(target, token);
+            });
+
+            // 8. Configurar mocks de gestión de directorios
+            var jsonUploadsFolder = uploadsDir;
+            var jsonProcessedFolder = processedDir;
+            _directoryManagerMock.Setup(d => d.EnsureAllNflPlayersDirectoriesExist());
+            _directoryManagerMock.Setup(d => d.GetNflPlayersUploadsPath()).Returns(jsonUploadsFolder);
+            _directoryManagerMock.Setup(d => d.GetNflPlayersProcessedPath()).Returns(jsonProcessedFolder);
+            _directoryManagerMock.Setup(d => d.GenerateUniqueFileName(It.IsAny<string>(), ".json")).Returns("jugadores_test.json");
+
+            // 9. Configurar rutas de archivos
+            var testJsonPath = System.IO.Path.Combine(uploadsDir, "jugadores_test.json");
+            var processedJsonPath = System.IO.Path.Combine(processedDir, "jugadores_test.json");
+            _jsonFileHandlerMock.Setup(j => j.MoveToProcessedFolder(It.IsAny<string>(), It.IsAny<string>(), true)).Returns((true, processedJsonPath, null));
+
+            // 10. Crear archivos de imagen fake
+            System.IO.File.WriteAllText("img1.png", "fake image 1");
+            System.IO.File.WriteAllText("img2.png", "fake image 2");
+
+            // 11. Crear servicio
+            var service = CreateService(validator);
+
+            try
+            {
+                // ACT: Ejecutar procesamiento que fallará en el segundo jugador
+                var result = await service.HandleBulkUploadAsync(fileMock.Object);
+
+                // ASSERT: Verificar comportamiento transaccional (rollback)
+                // 12. El resultado debe ser fallido
+                result.Success.Should().BeFalse();
+                
+                // 13. Debe haber un error del segundo jugador
+                result.Errors.Should().NotBeEmpty();
+                
+                // 14. El error debe mencionar el fallo simulado
+                try
+                {
+                    result.Errors.Should().Contain(e => 
+                        e.Contains("Jugador #2") && 
+                        e.Contains("Error simulado de base de datos")
+                    );
+                }
+                catch
+                {
+                    // Mostrar errores reales para debugging
+                    System.Console.WriteLine("Errores reales: " + string.Join(" | ", result.Errors));
+                    throw;
+                }
+                
+                // 15. CRÍTICO: No debe haberse creado NINGÚN jugador debido al rollback
+                // Aunque el primero fue exitoso, el rollback debe revertir todo
+                result.CreatedCount.Should().Be(0);
+            }
+            finally
+            {
+                // CLEANUP: Limpiar todos los archivos temporales
+                if (System.IO.File.Exists(testJsonPath))
+                    System.IO.File.Delete(testJsonPath);
+                if (System.IO.File.Exists(processedJsonPath))
+                    System.IO.File.Delete(processedJsonPath);
+                if (System.IO.File.Exists("img1.png"))
+                    System.IO.File.Delete("img1.png");
+                if (System.IO.File.Exists("img2.png"))
+                    System.IO.File.Delete("img2.png");
+            }
+        }
     }
 }

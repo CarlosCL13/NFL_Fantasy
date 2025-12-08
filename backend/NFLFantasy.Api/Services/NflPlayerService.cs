@@ -56,7 +56,7 @@ namespace NFLFantasy.Api.Services
         /// <summary>
         /// Método público para crear un jugador NFL desde byte array SIN validación (solo para uso interno en bulk, asume datos ya validados).
         /// </summary>
-        public async Task<(bool Success, string? Error)> CreateNflPlayerInternalAsync(NflPlayerCreateDto dto, byte[] imageBytes, string imageName, string uploadsFolder)
+        public virtual async Task<(bool Success, string? Error)> CreateNflPlayerInternalAsync(NflPlayerCreateDto dto, byte[] imageBytes, string imageName, string uploadsFolder)
         {
             // Procesar imagen y generar thumbnail usando el servicio compartido
             var (uniqueFileName, thumbnailFileName) = await _imageService.ProcessImageAsync(imageBytes, imageName, uploadsFolder);

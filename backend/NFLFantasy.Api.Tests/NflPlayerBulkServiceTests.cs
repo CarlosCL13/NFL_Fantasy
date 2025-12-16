@@ -107,6 +107,9 @@ namespace NFLFantasy.Api.Tests
                 // ACT: Ejecutar el método que estamos probando
                 var result = await service.HandleBulkUploadAsync(fileMock.Object);
 
+                // DEBUG: Imprimir los errores reales del validador para confirmar conexión real
+                System.Console.WriteLine("[DEBUG] Errores del validador: " + string.Join(" | ", result.Errors));
+
                 // ASSERT: Verificar que el resultado es el esperado
                 // 9. Verificar que el procesamiento falló (porque el equipo no existe)
                 result.Success.Should().BeFalse();
